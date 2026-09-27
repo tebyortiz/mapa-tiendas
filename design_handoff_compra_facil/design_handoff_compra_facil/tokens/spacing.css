@@ -1,0 +1,30 @@
+:root{
+--space-1:4px;
+--space-2:8px;
+--space-3:12px;
+--space-4:16px;
+--space-5:20px;
+--space-6:24px;
+--space-8:32px;
+--space-10:40px;
+--space-12:48px;
+--space-16:64px;
+--space-20:80px;
+--space-24:96px;
+
+--gutter-mobile:20px; /* @kind spacing */
+--gutter-desktop:40px; /* @kind spacing */
+--gutter:clamp(16px,2.4vw,32px); /* @kind spacing */
+--container:1760px; /* @kind spacing */
+--touch-min:44px; /* @kind spacing */
+
+/* Radii — pills for chips/buttons, softer small radius for cards */
+--radius-pill:999px;
+--radius-xs:6px;
+--radius-sm:10px;
+--radius-card:14px;
+--radius-panel:20px;
+--radius-sheet:24px;
+
+--border-w:1px; /* @kind spacing */
+}

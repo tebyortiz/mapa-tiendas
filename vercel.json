@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/geo/:path*", "destination": "https://geo-e-commerce.vercel.app/api/geo/:path*" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

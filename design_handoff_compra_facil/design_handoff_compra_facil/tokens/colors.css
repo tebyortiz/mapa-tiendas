@@ -1,0 +1,72 @@
+:root{
+/* Base — dark is the only mode */
+--cf-black:#07070D;
+--cf-ink-900:#07070D;
+--cf-ink-800:#0D0D16;
+--cf-ink-700:#12121C;
+--cf-ink-600:#1A1A27;
+--cf-ink-500:#242434;
+--cf-ink-400:#34344A;
+--cf-white:#FFFFFF;
+--cf-offwhite:#F2F1F7;
+--cf-gray-300:#C9C8D6;
+--cf-gray-400:#A9A8BC;
+--cf-gray-500:#85849A;
+
+/* Type accents — each business type owns a pair */
+--cf-coral:#FF6F61;
+--cf-amber:#FFC83D;
+--cf-blue:#3D8BFF;
+--cf-cyan:#2DD4F0;
+--cf-violet:#9B6BFF;
+--cf-lilac:#C4A1FF;
+
+/* Rainbow — sampled from the logo basket; neutral / "all" accent */
+--cf-rb-violet:#A474F5;
+--cf-rb-sky:#4FA9EE;
+--cf-rb-lime:#B5EC45;
+--cf-rb-yellow:#FFD43D;
+--cf-rb-coral:#FA6E4E;
+
+/* Status (used sparingly, never as a business-type color) */
+--cf-success:#5BE3A0;
+--cf-danger:#FF5A6E;
+
+/* Semantic — surfaces */
+--bg:var(--cf-ink-900);
+--surface:var(--cf-ink-700);
+--surface-raised:var(--cf-ink-600);
+--surface-sunken:var(--cf-ink-800);
+--surface-glass:rgba(255,255,255,.20);
+--surface-glass-dark:rgba(18,18,28,.72);
+--border:rgba(255,255,255,.08);
+--border-strong:rgba(255,255,255,.16);
+--scrim:rgba(7,7,13,.64);
+
+/* Semantic — text */
+--text-strong:var(--cf-white);
+--text-body:var(--cf-offwhite);
+--text-muted:var(--cf-gray-400);
+--text-subtle:var(--cf-gray-500);
+--text-on-accent:var(--cf-black);
+
+/* Semantic — type theming */
+--tienda:var(--cf-coral);
+--tienda-2:var(--cf-amber);
+--tienda-grad:linear-gradient(135deg,var(--cf-coral) 0%,var(--cf-amber) 100%);
+--tienda-soft:rgba(255,111,97,.14);
+--servicio:var(--cf-blue);
+--servicio-2:var(--cf-cyan);
+--servicio-grad:linear-gradient(135deg,var(--cf-blue) 0%,var(--cf-cyan) 100%);
+--servicio-soft:rgba(61,139,255,.14);
+--emprendimiento:var(--cf-violet);
+--emprendimiento-2:var(--cf-lilac);
+--emprendimiento-grad:linear-gradient(135deg,var(--cf-violet) 0%,var(--cf-lilac) 100%);
+--emprendimiento-soft:rgba(155,107,255,.14);
+--rainbow-grad:linear-gradient(135deg,var(--cf-rb-coral) 0%,var(--cf-rb-sky) 50%,var(--cf-rb-violet) 100%);
+
+/* Default accent (overridden per section / type view) */
+--accent:var(--cf-white);
+--accent-2:var(--cf-white);
+--accent-grad:var(--rainbow-grad);
+}

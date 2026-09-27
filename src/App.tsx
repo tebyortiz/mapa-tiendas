@@ -10,9 +10,9 @@ function App() {
     <Routes>
       <Route path="/" element={<LandingPage />} />
       <Route
-        path="/mapa/:tipo"
+        path="/mapa"
         element={
-          <Suspense fallback={<div className="min-h-screen bg-[#0e0721]" />}>
+          <Suspense fallback={<div style={{ minHeight: '100vh', background: 'var(--bg)' }} />}>
             <MapPage />
           </Suspense>
         }
