@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
+import type { FormEvent, PointerEvent } from 'react'
 import { GlowBackdrop } from '../../components/brand/GlowBackdrop'
 import { Button } from '../../components/ui/Button'
 import { Icon } from '../../components/ui/Icon'
 import { SearchInput } from '../../components/ui/SearchInput'
 import { LocationRow } from './shared'
+import type { ProductImage } from './city/cityConfig'
 
 // [duración, delay] de las letras que parpadean, por posición (seed + índice)
 const FLICKER: Record<number, [number, number]> = { 1: [9.5, 2.1], 4: [13, 5.4], 7: [11, 8.2], 9: [15.5, 3.3] }
@@ -24,28 +25,36 @@ function FlickerWord({ text, seed }: { text: string; seed: number }) {
   )
 }
 
+const HeroCity3D = lazy(() => import('./city/HeroCity3D'))
+
+// TEMPORAL: fotos gratuitas de internet (picsum.photos) para los avatares; se reemplazan por las definitivas
+const stock = (kw: string, n: number) => `https://picsum.photos/seed/${kw}${n}/120`
+const PRODUCT_IMAGES: ProductImage[] = [
+  ...['clothes', 'shoes', 'coffee', 'bread'].map((k, i) => ({ src: stock(k, i + 1), category: 'tienda' as const })),
+  ...['tools', 'haircut', 'plumbing', 'car'].map((k, i) => ({ src: stock(k, i + 11), category: 'servicio' as const })),
+  ...['cake', 'handmade', 'pottery', 'jam'].map((k, i) => ({ src: stock(k, i + 21), category: 'emprendimiento' as const })),
+]
+
 function HeroCity() {
-  const ref = useRef<HTMLDivElement>(null)
-  const [t, setT] = useState({ x: 0, y: 0 })
-  useEffect(() => {
-    const rm = matchMedia('(prefers-reduced-motion: reduce)').matches
-    const fine = matchMedia('(pointer: fine)').matches
-    if (rm || !fine) return
-    const f = (e: MouseEvent) => {
-      const r = ref.current?.getBoundingClientRect()
-      if (r) setT({ x: (e.clientX - r.left) / r.width - 0.5, y: (e.clientY - r.top) / r.height - 0.5 })
-    }
-    window.addEventListener('mousemove', f)
-    return () => window.removeEventListener('mousemove', f)
-  }, [])
-  const fade = 'radial-gradient(ellipse 72% 68% at 50% 50%,#000 55%,transparent 100%)'
+  const pointer = useRef({ x: 0, y: 0 })
+  const fade = 'radial-gradient(ellipse 72% 68% at 50% 50%,#000 78%,transparent 100%)'
+  const onMove = (e: PointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    pointer.current = { x: (e.clientX - r.left) / r.width - 0.5, y: (e.clientY - r.top) / r.height - 0.5 }
+  }
   return (
-    <div ref={ref} aria-label="Escena 3D de la ciudad" role="img" style={{ position: 'relative', width: '100%', maxWidth: 720, justifySelf: 'center', alignSelf: 'center', aspectRatio: '916 / 452', perspective: 1200 }}>
-      <div style={{ position: 'absolute', inset: 0, transform: `rotateX(${-t.y * 6}deg) rotateY(${t.x * 8}deg) translate3d(${t.x * -12}px,${t.y * -8}px,0)`, transition: 'transform 600ms var(--ease-out)', WebkitMaskImage: fade, maskImage: fade }}>
-        <img src="/assets/scenes/kenney-city-preview.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(.62) saturate(1.15) contrast(1.08)' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg,rgba(155,107,255,.38),rgba(61,139,255,.28) 50%,rgba(255,111,97,.26))', mixBlendMode: 'color' }} />
-        <div style={{ position: 'absolute', inset: 0, background: 'rgba(7,7,13,.28)' }} />
-      </div>
+    <div
+      className="hero-city"
+      aria-label="Escena 3D de la ciudad"
+      role="img"
+      onPointerMove={onMove}
+      onPointerLeave={() => (pointer.current = { x: 0, y: 0 })}
+      style={{ position: 'relative', width: '100%', justifySelf: 'center', alignSelf: 'center', WebkitMaskImage: fade, maskImage: fade }}
+    >
+      {/* mientras carga el chunk 3D (three + drei) se ve la captura estática */}
+      <Suspense fallback={<img src="/assets/scenes/kenney-city-preview.png" alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(.62) saturate(1.15) contrast(1.08)' }} />}>
+        <HeroCity3D images={PRODUCT_IMAGES} pointer={pointer} />
+      </Suspense>
     </div>
   )
 }

@@ -110,7 +110,7 @@ export default function MapPage() {
               distance={s.distance} open={s.open} hasOffers={s.hasOffers}
               onClose={() => setSel(null)}
               onDirections={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`, '_blank')}
-              onWeb={() => {}}
+              onWeb={s.web ? () => window.open(s.web, '_blank', 'noopener,noreferrer') : undefined}
             />
             <OffersStrip b={s} />
           </div>
