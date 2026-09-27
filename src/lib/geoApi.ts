@@ -44,7 +44,9 @@ export interface ApiResult {
   hours?: { weekday?: string; saturday?: string }
   /** ttv: 'ambos' | 'retiro' | 'delivery' */
   orderDelivery?: string
-  profile?: { description?: string; logo?: string; chainType?: string; hasDelivery?: boolean }
+  profile?: { description?: string; logo?: string; chainType?: string; hasDelivery?: boolean; storeUrl?: string }
+  /** URL de la tienda online (ttv: tu-tienda-virtual.com/..., gesto: app.gesto.lat/tienda/...) */
+  storeUrl?: string
   adminId?: string
   location: { type: 'Point'; coordinates: [number, number] } // [lng, lat]
   distance: number // metros
@@ -144,6 +146,7 @@ export function toBusiness(r: ApiResult, i: number): Business {
     address,
     hours,
     delivery: toDelivery(r),
+    web: r.storeUrl || r.profile?.storeUrl || undefined,
     description,
     deals,
     hasOffers: deals.length > 0,

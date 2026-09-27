@@ -293,6 +293,7 @@ a:hover {
 /* ───────── Landing: responsive del kit ───────── */
 .lp-hero { grid-template-columns: minmax(0, 1fr); }
 .lp-hero > * { min-width: 0; }
+.hero-city { aspect-ratio: 916 / 560; }
 .lp-cards { grid-template-columns: 1fr; }
 .lp-join { grid-template-columns: 1fr; }
 .nav-lbl { display: none; }
@@ -366,8 +367,11 @@ a:hover {
 }
 @media (min-width: 960px) {
   .lp-hero { grid-template-columns: 1.1fr 1fr; }
+  .hero-city { max-width: 1040px !important; }
 }
 @media (max-width: 959px) {
+  /* la escena llega hasta los bordes del viewport (sin el padding lateral de la sección) */
+  .hero-city { width: calc(100% + 2 * var(--gutter)) !important; margin-inline: calc(-1 * var(--gutter)); }
   .hero-brand { justify-content: center; }
 }
 @media (max-width: 899px) {

@@ -95,8 +95,8 @@ export function BusinessSheet({ type = 'tienda', name, chain, branch, chainImage
           )}
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Button type={type} icon="globe" onClick={onWeb} style={{ flex: 1 }}>Visitar web</Button>
-          <Button variant="secondary" type={type} icon="navigation" onClick={onDirections}>Cómo llegar</Button>
+          {onWeb && <Button type={type} icon="globe" onClick={onWeb} style={{ flex: 1 }}>Visitar web</Button>}
+          <Button variant="secondary" type={type} icon="navigation" onClick={onDirections} style={onWeb ? undefined : { flex: 1 }}>Cómo llegar</Button>
         </div>
       </div>
     </div>
