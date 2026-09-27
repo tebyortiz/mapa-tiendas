@@ -8,8 +8,9 @@ import type { Business, CategoryKey, TypeKey } from '../data/types'
 import { LandingNav } from '../features/landing/Nav'
 import { MapView } from '../features/map/MapView'
 import { MAP_CENTER } from '../lib/mapbox'
-import { fmtDistance, metersBetween } from '../lib/geoApi'
+import { fetchNearby, fmtDistance, metersBetween, toBusiness } from '../lib/geoApi'
 import { loadNearby, locateAndFetch } from '../lib/nearbyStore'
+import type { Nearby } from '../lib/nearbyStore'
 import { LocationModal } from '../features/map/LocationModal'
 import { MapControls } from '../features/map/MapControls'
 import { MapTopBar } from '../features/map/MapTopBar'
@@ -38,6 +39,15 @@ export default function MapPage() {
   const [locError, setLocError] = useState<string | null>(null)
   const [apiBiz, setApiBiz] = useState<Business[] | null>(cached?.businesses ?? null)
   const [userPos, setUserPos] = useState<{ lat: number; lng: number }>(cached?.pos ?? MAP_CENTER)
+  // Modo Tunuyán: se ve el mapa desde el centro de la ciudad; al apagarlo se vuelve a la ubicación detectada por el navegador
+  const [tunuyan, setTunuyan] = useState(false)
+  const [tunuyanLoading, setTunuyanLoading] = useState(false)
+  const realNearby = useRef<Nearby | null>(cached)
+
+  const flash = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 2600)
+  }
 
   // Con datos del backend (solo tiendas) se suman los servicios y emprendimientos de ejemplo, con la distancia desde el usuario.
   const businesses = useMemo(
@@ -50,6 +60,8 @@ export default function MapPage() {
     setLocError(null)
     try {
       const n = await locateAndFetch()
+      realNearby.current = n
+      setTunuyan(false)
       setApiBiz(n.businesses)
       setUserPos(n.pos)
       setSel(null)
@@ -82,6 +94,33 @@ export default function MapPage() {
     setSel(id)
     if (!desk) setExp(false)
   }
+  const toggleTunuyan = async () => {
+    setTunuyanLoading(true)
+    try {
+      if (!tunuyan) {
+        const results = await fetchNearby(MAP_CENTER.lat, MAP_CENTER.lng)
+        setApiBiz(results.map(toBusiness))
+        setUserPos(MAP_CENTER)
+        setTunuyan(true)
+        flash('Viendo Tunuyán')
+      } else {
+        const n = realNearby.current ?? (await locateAndFetch())
+        realNearby.current = n
+        setApiBiz(n.businesses)
+        setUserPos(n.pos)
+        setTunuyan(false)
+        flash('Volviste a tu ubicación')
+      }
+      setSel(null)
+      const c = !tunuyan ? MAP_CENTER : (realNearby.current?.pos ?? MAP_CENTER)
+      mapRef.current?.flyTo({ center: [c.lng, c.lat], zoom: 15 })
+    } catch (e) {
+      console.error('[geo] error', e)
+      flash(tunuyan ? 'No pudimos obtener tu ubicación' : 'No pudimos cargar Tunuyán')
+    } finally {
+      setTunuyanLoading(false)
+    }
+  }
   const locate = () => {
     mapRef.current?.flyTo({ center: [userPos.lng, userPos.lat], zoom: 15 })
     setToast('Te encontramos')
@@ -94,7 +133,7 @@ export default function MapPage() {
       <div data-type={type === 'todas' ? undefined : type} style={{ position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <MapView items={items} selectedId={sel} onSelect={pick} mapRef={mapRef} userPos={userPos} />
         <MapTopBar present={present} type={type} setType={setType} cat={cat} setCat={setCat} picked={picked} onPick={() => setPicked(true)} />
-        <MapControls onZoomIn={() => mapRef.current?.zoomIn()} onZoomOut={() => mapRef.current?.zoomOut()} onLocate={locate} />
+        <MapControls onZoomIn={() => mapRef.current?.zoomIn()} onZoomOut={() => mapRef.current?.zoomOut()} onLocate={locate} tunuyan={tunuyan} tunuyanLoading={tunuyanLoading} onToggleTunuyan={toggleTunuyan} />
         <ResultsPanel items={items} selectedId={sel} onSelect={pick} expanded={exp} setExpanded={setExp} type={type} desk={desk} />
         {toast && (
           <div style={{ position: 'absolute', zIndex: 700, left: 0, right: 0, top: 'calc(var(--mp-top,240px) + 8px)', display: 'flex', justifyContent: 'center' }}>
