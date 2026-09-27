@@ -1,0 +1,49 @@
+<!-- @dsCard group="Map app" viewport="390x844" name="Mapa interactivo (mobile)" subtitle="Filtros por tipo y categoría, markers, detalle" -->
+<!DOCTYPE html><html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Comprá Fácil — Mapa</title><link rel="stylesheet" href="../../styles.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<style>html,body,#root{margin:0;height:100%;overflow:hidden}@media(max-width:759px){.lp-nav{min-height:56px!important;padding-top:4px!important;padding-bottom:4px!important}}@media(max-width:599px){:root{--mp-pad:12px;--mp-gap:10px}.mp-logo{height:32px!important}.mp-title{font-size:28px!important}}.nav-lbl{display:none}.nav-lbl-wrap{position:absolute!important;left:50%;bottom:6px;width:22px;margin-left:-11px}.nav-cta{display:none}.nav-tube-on{animation:cf-tube-on .7s steps(1,end) both}.nav-idle{animation:cf-tube-on 1s steps(1,end) both}@media(max-width:559px){.nav-brand .cf-neon{display:none}}@media(min-width:640px){.nav-cta{display:block}}@media(min-width:1180px){.nav-lbl{display:inline}.nav-lbl-wrap{position:relative!important;left:auto;bottom:auto;width:auto;margin-left:0}}@media(prefers-reduced-motion:reduce){.nav-tube-on,.nav-idle{animation:none!important}}.leaflet-container{background:#0b0b12;font-family:var(--font-body)}.leaflet-control-attribution{background:rgba(7,7,13,.6)!important;color:var(--text-subtle)!important;font-size:10px}.leaflet-control-attribution a{color:var(--text-muted)!important}
+@media(min-width:900px){.mp-panel{left:12px!important;right:auto!important;top:calc(var(--mp-top,240px) + 4px)!important;bottom:auto!important;width:min(480px,44vw);height:auto!important;max-height:calc(100% - var(--mp-top,240px) - 16px);border-radius:var(--radius-panel)!important}.mp-panel[data-open="false"] .mp-list{display:none!important}.mp-grip{display:none}.mp-ctrl{bottom:24px!important}.mp-sheet{left:auto!important;right:72px!important;bottom:24px!important;width:min(420px,calc(100% - min(480px,44vw) - 100px));max-height:calc(100% - var(--mp-top,240px) - 36px)!important}}</style></head><body><div id="root"></div>
+<script src="../landing/data.js"></script>
+<script src="map-data.js"></script>
+<script type="text/babel" src="../landing/Nav.jsx"></script>
+<script type="text/babel" src="MapView.jsx"></script>
+<script type="text/babel" src="MapChrome.jsx"></script>
+<script type="text/babel">
+const Q=new URLSearchParams(location.search);
+const SYN=q=>{q=q.toLowerCase();const m={'pantalón':['pantal','ropa'],'zapatillas':['zapat','ropa'],'celulares':['celu','electr'],'auriculares':['auric','audio'],'pizza':['pizza','prepizza','vianda'],'herramientas':['herramient','taladro','ferret'],'alimento para perros':['alimento','perro'],'muebles':['mueble','mesa','rack'],'tortas':['torta','pastel']};return m[q]||[q]};
+const mq=window.matchMedia('(min-width:900px)');
+function App(){
+  const {BusinessSheet,Toast}=window.ComprFCilDesignSystem_3bc5cd;
+  const [type,setType]=React.useState(Q.get('type')||'todas');
+  const [picked,setPicked]=React.useState(!!Q.get('type'));
+  const [cat,setCat]=React.useState('todas');
+  const [query,setQuery]=React.useState('');
+  const [sel,setSel]=React.useState(Q.get('id')?+Q.get('id'):null);
+  const [desk,setDesk]=React.useState(mq.matches);
+  const [exp,setExp]=React.useState(mq.matches);
+  React.useEffect(()=>{const f=()=>{setDesk(mq.matches);setExp(mq.matches)};mq.addEventListener('change',f);return()=>mq.removeEventListener('change',f)},[]);
+  const [toast,setToast]=React.useState(null);
+  const all=window.CF_DATA.businesses;
+  const items=all.filter(b=>(type==='todas'||b.type===type)&&(cat==='todas'||b.category===cat)&&(!query||SYN(query).some(w=>b.search.includes(w))));
+  const s=all.find(b=>b.id===sel);
+  const pick=id=>{setSel(id);if(!desk)setExp(false)};
+  const locate=()=>{window.__cfMap.flyTo([-33.5765,-69.0155],15);setToast('Te encontramos en Tunuyán');setTimeout(()=>setToast(null),2600)};
+  return <div style={{height:'100%',display:'flex',flexDirection:'column'}}><LandingNav base="../landing/index.html" sticky={false} cta={false}/><div data-type={type==='todas'?undefined:type} style={{position:'relative',flex:1,minHeight:0,overflow:'hidden'}}>
+    <MapView items={items} selectedId={sel} onSelect={pick}/>
+    <MapTopBar type={type} setType={setType} cat={cat} setCat={setCat} query={query} setQuery={setQuery} picked={picked} onPick={()=>setPicked(true)}/>
+    <MapControls onLocate={locate}/>
+    <ResultsPanel items={items} selectedId={sel} onSelect={pick} expanded={exp} setExpanded={setExp} type={type} desk={desk}/>
+    {toast&&<div style={{position:'absolute',zIndex:700,left:0,right:0,top:'calc(var(--mp-top,240px) + 8px)',display:'flex',justifyContent:'center'}}><Toast icon="locate-fixed" tone="success">{toast}</Toast></div>}
+    {s&&<div key={s.id} className="mp-sheet" style={{position:'absolute',zIndex:650,left:8,right:8,bottom:8,maxHeight:'78%',overflowY:'auto',scrollbarWidth:'none',display:'flex',flexDirection:'column',alignItems:'center',gap:10,animation:'cf-rise var(--dur-slow) var(--ease-out)'}}>
+      <OffersStrip b={s}/>
+      <BusinessSheet {...s} onClose={()=>setSel(null)} onDirections={()=>window.open('https://www.google.com/maps/dir/?api=1&destination='+s.lat+','+s.lng,'_blank')} onWeb={()=>{}}/>
+    </div>}
+  </div></div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script></body></html>

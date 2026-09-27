@@ -1,15 +1,29 @@
-import CatalogVirtual from '../components/landing/CatalogVirtual'
-import FeaturedOffers from '../components/landing/FeaturedOffers'
-import Hero from '../components/landing/Hero'
-import MostRequested from '../components/landing/MostRequested'
+import { useNavigate } from 'react-router-dom'
+import { useNearby } from '../lib/nearbyStore'
+import { LandingCatalog } from '../features/landing/Catalog'
+import { LandingHero } from '../features/landing/Hero'
+import { LandingJoin, LandingFooter } from '../features/landing/JoinFooter'
+import { LandingNav } from '../features/landing/Nav'
+import { LandingNearby } from '../features/landing/Nearby'
+import { LandingMostRequested } from '../features/landing/MostRequested'
+import { LandingOffers } from '../features/landing/Offers'
+import type { OpenMap } from '../features/landing/shared'
 
 export default function LandingPage() {
+  const navigate = useNavigate()
+  const geo = useNearby()
+  const open: OpenMap = (type, id) => navigate(`/mapa${type ? `?type=${type}${id ? `&id=${id}` : ''}` : ''}`)
+  const search = (q: string) => navigate(`/mapa?q=${encodeURIComponent(q)}`)
   return (
-    <main className="min-h-screen bg-[#0e0721]">
-      <Hero />
-      <CatalogVirtual />
-      <FeaturedOffers />
-      <MostRequested />
-    </main>
+    <div>
+      <LandingNav onOpenMap={() => open()} search={{ query: '', onSearch: (q) => q && search(q) }} />
+      <LandingHero onOpenMap={() => open()} onSearch={search} city={geo.nearby?.city} />
+      <LandingOffers onOpenMap={open} geo={geo} />
+      <LandingCatalog onOpenMap={open} />
+      <LandingMostRequested onOpenMap={open} />
+      <LandingNearby onOpenMap={open} geo={geo} />
+      <LandingJoin />
+      <LandingFooter />
+    </div>
   )
 }

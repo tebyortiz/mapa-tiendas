@@ -1,0 +1,12 @@
+import React from 'react';
+import { Icon } from '../icons/Icon.jsx';
+const TYPE={tienda:{a:'var(--tienda)',b:'var(--tienda-2)',g:'var(--tienda-grad)',soft:'var(--tienda-soft)',glow:'var(--glow-tienda)',rgb:'255,111,97'},servicio:{a:'var(--servicio)',b:'var(--servicio-2)',g:'var(--servicio-grad)',soft:'var(--servicio-soft)',glow:'var(--glow-servicio)',rgb:'61,139,255'},emprendimiento:{a:'var(--emprendimiento)',b:'var(--emprendimiento-2)',g:'var(--emprendimiento-grad)',soft:'var(--emprendimiento-soft)',glow:'var(--glow-emprendimiento)',rgb:'155,107,255'},todas:{a:'#FFFFFF',b:'#FFFFFF',g:'var(--rainbow-grad)',soft:'rgba(255,255,255,.08)',glow:'var(--glow-rainbow)',rgb:'255,255,255'}};
+const DEF=[{value:'todas',label:'Todas',icon:'layout-grid'},{value:'tienda',label:'Tiendas',icon:'shopping-bag'},{value:'servicio',label:'Servicios',icon:'wrench'},{value:'emprendimiento',label:'Emprendimientos',short:'Emprend.',icon:'sparkles'}];
+export function TypeSelector({value='todas',onChange,options=DEF,compact,dense,style}){
+  return <div role="tablist" style={{display:'flex',gap:4,padding:4,borderRadius:'var(--radius-pill)',background:'var(--surface-sunken)',boxShadow:'inset 0 0 0 1px var(--border)',width:dense?'100%':'max-content',maxWidth:'100%',minWidth:0,boxSizing:'border-box',overflowX:'auto',scrollbarWidth:'none',...style}}>
+    {options.map(o=>{const on=o.value===value;const t=TYPE[o.value]||TYPE.todas;
+      return <button key={o.value} role="tab" aria-selected={on} onClick={()=>onChange&&onChange(o.value)} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6,height:dense?36:40,minHeight:dense?36:40,padding:dense?'0 8px':compact?'0 12px':'0 16px',flex:dense?'1 1 auto':undefined,minWidth:0,borderRadius:'var(--radius-pill)',border:'none',cursor:'pointer',whiteSpace:'nowrap',fontFamily:'var(--font-body)',fontWeight:800,fontSize:dense?12:14,background:on?t.g:'transparent',color:on?'var(--text-on-accent)':'var(--text-muted)',boxShadow:on?t.glow:'none',transition:'all var(--dur-base) var(--ease-out)'}}>
+        {!dense&&<Icon name={o.icon} size={16} color={on?'var(--cf-black)':(o.value==='todas'?'currentColor':t.a)}/>}{dense?(o.short||o.label):(!compact||on?o.label:null)}
+      </button>})}
+  </div>;
+}

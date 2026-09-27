@@ -1,42 +1,97 @@
-export type CatalogType = 'tiendas' | 'servicios' | 'emprendimientos'
+export type BusinessType = 'tienda' | 'servicio' | 'emprendimiento'
+export type TypeKey = BusinessType | 'todas'
 
-export interface CatalogOption {
-  type: CatalogType
-  label: string
-  singular: string
-  image: string
-  cta: string
-}
+export type CategoryKey =
+  | 'supermercado'
+  | 'restaurant'
+  | 'ferreteria'
+  | 'ropa'
+  | 'electronica'
+  | 'farmacia'
+  | 'mascotas'
+  | 'hogar'
+  | 'entretenimiento'
+  | 'automotriz'
+  | 'despensa'
+  | 'kiosco'
+  | 'minimarket'
+  | 'verduleria'
+  | 'carniceria'
+  | 'panaderia'
+  | 'mecanica'
+  | 'plomeria'
+  | 'barberia'
+  | 'electricidad'
+  | 'cerrajeria'
+  | 'comida'
+  | 'pasteleria'
+  | 'souvenirs'
+  | 'catering'
+  | 'artesanias'
+  | 'otros'
 
-export interface OfferCard {
-  id: string
-  storeLabel: string
-  title: string
-  image: string
-  badge?: string
-  accent: string
-}
-
-export interface RequestedCard {
-  id: string
-  personName: string
-  personAvatar: string
-  category: string
-  description: string
-  image: string
-}
-
-export interface MapPin {
-  id: string
+export interface Product {
   name: string
-  address: string
-  whatsapp: string
+  discount: string
+  image?: string
+}
+
+export interface Deal {
+  name: string
+  description: string
+  until: string
+  image?: string
+  products: Product[]
+}
+
+/** Cómo se entrega la compra: retiro en la sucursal o con envío */
+export type DeliveryMode = 'mostrador' | 'delivery'
+
+export interface Business {
+  id: number
+  type: BusinessType
+  chain: string
+  branch: string
+  name: string
+  chainImage?: string
+  image: string
+  category: CategoryKey
+  categoryLabel: string
+  distance: string
+  open: boolean
   lat: number
   lng: number
-  icon: 'store' | 'wrench' | 'sparkles' | 'scissors' | 'cake' | 'smartphone'
-  gradient: string
-  hasOnlineStore: boolean
-  deliveryPickup: boolean
-  deliveryShipping: boolean
+  address: string
+  hours: string
+  /** Solo cuando la API informa la modalidad de entrega */
+  delivery?: DeliveryMode[]
+  description: string
+  web?: string
+  deals: Deal[]
   hasOffers: boolean
+  /** Texto en minúsculas para la búsqueda (negocio, cadena, sucursal, categoría, ofertas, productos) */
+  search: string
+}
+
+export interface Offer {
+  id: number
+  type: BusinessType
+  businessId: number
+  store: string
+  title: string
+  description: string
+  /** Solo en ofertas que vienen de la API */
+  image?: string
+  storeImage?: string
+  until?: string
+}
+
+export interface Requested {
+  id: number
+  type: BusinessType
+  category: CategoryKey
+  businessId: number
+  person: string
+  service: string
+  description: string
 }
