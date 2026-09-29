@@ -18,17 +18,17 @@ export type GroundTile = { fila: number; columna: number; kind: GroundKind }
 
 export const CELL = 1
 
-// Plano del pueblo, generado (21×13). . = vacío (borde irregular) · r = calle · g = césped · T = césped con árboles
+// Plano del pueblo, generado (15×11). . = vacío (borde irregular) · r = calle · g = césped · T = césped con árboles
 // B = edificio · F = fuente (plaza rodeada por la calle)
-const W = 21
-const H = 13
-const FC = 10 // columna de la fuente
-const FR = 6 // fila de la fuente
-const STREET_ROWS = [2, 6, 10]
-const STREET_COLS = [4, 10, 16]
+const W = 15
+const H = 11
+const FC = 7 // columna de la fuente
+const FR = 5 // fila de la fuente
+const STREET_ROWS = [2, 5, 8]
+const STREET_COLS = [3, 7, 11]
 
 const noise = (f: number, c: number, n = 0) => Math.abs(Math.sin(f * 12.9898 + c * 78.233 + n * 37.719) * 43758.5453) % 1
-const norm = (f: number, c: number) => Math.hypot((c - FC) / 10.4, (f - FR) / 6.5) // 0 en la fuente, ~1 en el borde
+const norm = (f: number, c: number) => Math.hypot((c - FC) / 7.4, (f - FR) / 5.5) // 0 en la fuente, ~1 en el borde
 
 const MAP: string[] = Array.from({ length: H }, (_, f) =>
   Array.from({ length: W }, (_, c) => {
@@ -49,11 +49,13 @@ const DIRS: [number, number][] = [[0, 1], [-1, 0], [0, -1], [1, 0]] // E, N, W, 
 const at = (f: number, c: number) => MAP[f]?.[c] ?? '.'
 const isRoad = (f: number, c: number) => at(f, c) === 'r'
 
-// Casas del kit Suburban (~1.3 de ancho a escala 1, se achican) y comercios bajos del kit Commercial
+// Casas del kit Suburban (~1.3 de ancho a escala 1, se achican) y comercios del kit Commercial
 const HOUSES = 'abcdefghijklmnopqrstu'.split('').map((l) => `building-type-${l}`)
-// Comercios de 2-3 pisos (mayoría), algunos de 4 y muy pocos altos; se omiten los más anchos que una celda
-const SHOPS = ['c', 'c', 'c', 'a', 'b', 'd', 'h', 'a', 'c', 'd', 'f', 'g'].map((l) => `building-${l}`)
-const TALL_SHOPS = ['building-l', 'building-m']
+// Alturas medidas de cada .glb (se omiten e/j/k/n: más anchos que una celda y no encajan)
+const SHOPS_LOW = ['c', 'a', 'b', 'd', 'h'].map((l) => `building-${l}`) // ~2 pisos, la mayoría
+const SHOPS_MID = ['f', 'g', 'i'].map((l) => `building-${l}`) // ~3 pisos, algún que otro
+const SHOPS_HIGH = ['building-l'] // ~4 pisos, muy pocos
+const SHOPS_RARE = ['building-m'] // el más alto disponible sin llegar a rascacielos; casi nunca aparece
 
 const pieces: CityPiece[] = []
 const ground: GroundTile[] = []
@@ -114,17 +116,26 @@ for (let fila = 0; fila < ROWS; fila++) {
       continue
     }
 
-    // B: edificio orientado hacia la calle vecina; casas en las afueras, comercios cerca de la plaza
+    // B: edificio orientado hacia la calle vecina; casas en las afueras, comercios cerca de la plaza,
+    // con algo de mezcla en ambos sentidos para que el centro no se vea 100% "comercial" ni las afueras 100% "suburbanas"
     ground.push({ fila, columna, kind: 'lot' })
     const facing = DIRS.findIndex(([df, dc]) => isRoad(fila + df, columna + dc))
     const rot = facing < 0 ? 0 : (facing - 3 + 4) % 4 // el frente de Kenney mira a +Z (sur, índice 3)
     const nearCenter = norm(fila, columna) < 0.55
+    const mix = hash(fila, columna, 13)
+    const isCommercial = nearCenter ? mix > 0.18 : mix < 0.08
     const pick = Math.floor(hash(fila, columna, 9) * 100)
-    pieces.push(
-      nearCenter
-        ? { id: id('b'), tipo: hash(fila, columna, 11) < 0.05 ? TALL_SHOPS[pick % 2] : SHOPS[pick % SHOPS.length], fila, columna, rotacion: rot, escala: 0.72 }
-        : { id: id('b'), tipo: HOUSES[pick % HOUSES.length], fila, columna, rotacion: rot, escala: 0.62 },
-    )
+    let tipo: string
+    if (isCommercial) {
+      const tier = hash(fila, columna, 11)
+      tipo = tier < 0.72 ? SHOPS_LOW[pick % SHOPS_LOW.length]
+        : tier < 0.93 ? SHOPS_MID[pick % SHOPS_MID.length]
+        : tier < 0.99 ? SHOPS_HIGH[pick % SHOPS_HIGH.length]
+        : SHOPS_RARE[pick % SHOPS_RARE.length]
+    } else {
+      tipo = HOUSES[pick % HOUSES.length]
+    }
+    pieces.push({ id: id('b'), tipo, fila, columna, rotacion: rot, escala: isCommercial ? 0.72 : 0.62 })
   }
 }
 export const CITY_PIECES: CityPiece[] = pieces
@@ -138,7 +149,7 @@ export const FOUNTAIN_POSITION = (() => {
 export const FEATURED: Record<string, BusinessType> = (() => {
   const cats: BusinessType[] = ['tienda', 'servicio', 'emprendimiento']
   const cands = pieces
-    .filter((p) => p.id.startsWith('b-') && norm(p.fila, p.columna) > 0.3 && norm(p.fila, p.columna) < 0.8)
+    .filter((p) => p.id.startsWith('b-') && !p.tipo.startsWith('building-type-') && norm(p.fila, p.columna) > 0.3 && norm(p.fila, p.columna) < 0.8)
     .sort((a, b) => Math.atan2(a.fila - FR, a.columna - FC) - Math.atan2(b.fila - FR, b.columna - FC))
   const out: Record<string, BusinessType> = {}
   for (let i = 0; i < 9; i++) out[cands[Math.floor((i * cands.length) / 9)].id] = cats[i % 3]

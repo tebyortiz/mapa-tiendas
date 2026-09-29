@@ -51,6 +51,7 @@ function NeonNavLink({ l, i, base }: { l: NavLinkDef; i: number; base: string })
   const common = {
     'aria-label': l.label,
     title: l.label,
+    className: `nav-link-${l.id}`,
     onMouseEnter: enter,
     onFocus: enter,
     onMouseLeave: () => setOn(false),
@@ -98,27 +99,41 @@ function NavDrawer({ base, search, onClose }: { base: string; search?: LandingNa
     search?.onSearch(draft)
     onClose()
   }
-  const linkStyle = { display: 'flex', alignItems: 'center', gap: 14, minHeight: 52, padding: '0 14px', borderRadius: 14, textDecoration: 'none', font: '700 16px var(--font-body)', color: 'var(--text-strong)', background: 'rgba(255,255,255,.04)' } as const
+  const linkStyle = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', minHeight: 52, padding: '0 16px', borderRadius: 14, textDecoration: 'none', font: '700 16px var(--font-body)', color: 'var(--text-strong)', background: 'rgba(255,255,255,.04)' } as const
+  const fixedSpacer = <div aria-hidden="true" style={{ flex: 'none', height: 24 }} />
+  const introText = { margin: 0, font: '600 14px var(--font-body)', lineHeight: 1.4, color: 'var(--text-muted)' } as const
   return createPortal(
     <div className="nav-drawer-root" style={{ position: 'fixed', inset: 0, zIndex: 1000 }}>
       <div className="nav-drawer-scrim" onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,.6)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)' }} />
-      <aside role="dialog" aria-modal="true" aria-label="Menú" className="nav-drawer" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 'min(320px, 86vw)', display: 'flex', flexDirection: 'column', gap: 22, padding: 20, boxSizing: 'border-box', overflowY: 'auto', background: 'var(--bg)', borderRight: '1px solid var(--border-strong)', boxShadow: '0 0 40px rgba(164,116,245,.25)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Wordmark size={20} />
+      <aside role="dialog" aria-modal="true" aria-label="Menú" className="nav-drawer" style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 'min(320px, 86vw)', display: 'flex', flexDirection: 'column', padding: 20, boxSizing: 'border-box', overflowY: 'auto', background: 'var(--bg)', borderRight: '1px solid var(--border-strong)', boxShadow: '0 0 40px rgba(164,116,245,.25)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 16 }}>
+          <Wordmark size={20} animated markStyle={{ transform: 'translateY(-6px)' }} />
           <IconButton icon="x" label="Cerrar menú" onClick={onClose} />
         </div>
         {search && (
-          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <SearchInput glass value={draft} onChange={(v) => { setDraft(v); if (!v) search.onSearch('') }} placeholder="Buscar cerca tuyo…" />
-            <Button htmlType="submit" type="todas" icon="search" fullWidth style={{ color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>Buscar</Button>
-          </form>
+          <>
+            {fixedSpacer}
+            <p style={introText}>¿Qué se te antoja hoy? Buscá y encontrá lo que necesitás, cerca tuyo.</p>
+            <form onSubmit={submit} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>
+              <SearchInput glass value={draft} onChange={(v) => { setDraft(v); if (!v) search.onSearch('') }} placeholder="Buscar cerca tuyo…" style={{ flex: 1, minWidth: 0 }} />
+              <Button htmlType="submit" type="todas" icon="search" aria-label="Buscar" style={{ width: 48, padding: 0, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }} />
+            </form>
+            {fixedSpacer}
+          </>
         )}
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {NAV_LINKS.map((l) => {
+        {!search && fixedSpacer}
+        <p style={introText}>Explorá por categoría y descubrí qué hay cerca tuyo.</p>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
+          {NAV_LINKS.map((l, i) => {
             const inner = (
               <>
-                <Icon name={l.icon} size={22} color={l.c} style={{ filter: `drop-shadow(0 0 5px ${l.c})` }} />
-                {l.label}
+                <span style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <span className="nav-idle" style={{ display: 'inline-flex', animationDelay: `${i * 150}ms`, filter: `drop-shadow(0 0 5px ${l.c})` }}>
+                    <Icon name={l.icon} size={22} color={l.c} />
+                  </span>
+                  {l.label}
+                </span>
+                <Icon name="chevron-right" size={18} color="rgba(255,255,255,.35)" />
               </>
             )
             return base ? (
@@ -128,8 +143,8 @@ function NavDrawer({ base, search, onClose }: { base: string; search?: LandingNa
             )
           })}
         </nav>
-        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 18, borderTop: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, font: '800 12px var(--font-body)', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+        <div style={{ marginTop: 'auto', paddingTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 16, font: '800 12px var(--font-body)', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
             <Icon name="user-round" size={16} /> Mi cuenta
           </div>
           <Button icon="log-in" fullWidth style={{ color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>Ingresar</Button>
@@ -156,28 +171,45 @@ export function LandingNav({ onOpenMap, base = '', sticky = true, cta = true, se
   const [menu, setMenu] = useState(false)
   return (
     <header
-      className="lp-nav"
-      style={{ position: sticky ? 'sticky' : 'relative', top: 0, zIndex: sticky ? 20 : 800, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 76, padding: '14px var(--gutter)', background: 'rgba(7,7,13,.72)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border)' }}
+      className="lp-nav-outer"
+      style={{ position: sticky ? 'sticky' : 'relative', top: 0, zIndex: sticky ? 20 : 800, flex: 'none' }}
     >
-      <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button type="button" className="nav-burger" aria-label="Abrir menú" onClick={() => setMenu(true)} style={{ width: 44, height: 44, flex: 'none', alignItems: 'center', justifyContent: 'center', padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }}>
-          <Icon name="list-sort-descending" size={30} color="#fff" style={{ filter: 'drop-shadow(0 0 3px #fff) drop-shadow(0 0 9px rgba(255,255,255,.8)) drop-shadow(0 0 18px rgba(255,255,255,.45))' }} />
-        </button>
-        {base ? (
-          <Link to={`${base}#hero`} className="nav-brand" style={{ display: 'flex', textDecoration: 'none' }}>{brand}</Link>
-        ) : (
-          <a href="#hero" className="nav-brand" style={{ display: 'flex', textDecoration: 'none' }}>{brand}</a>
-        )}
-      </div>
-      <nav className="lp-links" style={{ display: 'flex', gap: 6 }}>
-        {NAV_LINKS.map((l, i) => <NeonNavLink key={l.id} l={l} i={i} base={base} />)}
-      </nav>
-      {search && <NavSearch query={search.query} onSearch={search.onSearch} />}
-      {cta && (
-        <div className="nav-cta">
-          <Button size="sm" iconRight="map" onClick={onOpenMap} style={{ color: '#fff' }}>abrir mapa</Button>
+      <div
+        aria-hidden="true"
+        style={{ position: 'absolute', inset: 0, zIndex: -1, background: 'rgba(7,7,13,.72)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border)' }}
+      />
+      <div className="lp-nav" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 76, padding: '14px var(--gutter)' }}>
+        <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button type="button" className="nav-burger" aria-label="Abrir menú" onClick={() => setMenu(true)} style={{ width: 44, height: 44, flex: 'none', alignItems: 'center', justifyContent: 'center', padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }}>
+            <Icon name="list-sort-descending" size={30} color="#fff" style={{ filter: 'drop-shadow(0 0 3px #fff) drop-shadow(0 0 9px rgba(255,255,255,.8)) drop-shadow(0 0 18px rgba(255,255,255,.45))' }} />
+          </button>
+          {base ? (
+            <Link to={`${base}#hero`} className="nav-brand" style={{ display: 'flex', textDecoration: 'none' }}>{brand}</Link>
+          ) : (
+            <a href="#hero" className="nav-brand" style={{ display: 'flex', textDecoration: 'none' }}>{brand}</a>
+          )}
         </div>
-      )}
+        <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <nav className="lp-links" style={{ display: 'flex', gap: 6 }}>
+            {NAV_LINKS.map((l, i) => <NeonNavLink key={l.id} l={l} i={i} base={base} />)}
+          </nav>
+          {search && !cta && <NavSearch query={search.query} onSearch={search.onSearch} />}
+          {cta && (
+            <button
+              type="button"
+              className="nav-cta"
+              aria-label="Abrir mapa"
+              title="Abrir mapa"
+              onClick={onOpenMap}
+              style={{ height: 44, flex: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '0 18px', border: 'none', borderRadius: 'var(--radius-pill)', cursor: 'pointer', background: 'var(--rainbow-grad)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.25)', font: '800 14px var(--font-body)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)', whiteSpace: 'nowrap' }}
+            >
+              <Icon name="map" size={18} color="#fff" />
+              <span className="nav-cta-label-desktop">abrir mapa</span>
+              <span className="nav-cta-label-mobile">mapa</span>
+            </button>
+          )}
+        </div>
+      </div>
       {menu && <NavDrawer base={base} search={search} onClose={() => setMenu(false)} />}
     </header>
   )

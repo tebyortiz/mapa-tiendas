@@ -66,7 +66,7 @@ function shuffle<T>(arr: T[]): T[] {
 type Active = { key: number; id: string; category: BusinessType; img?: string; anchor: [number, number, number] }
 
 /** Enciende un edificio destacado a la vez (mazo barajado) y muestra el avatar de producto sincronizado. */
-function Orchestrator({ registry, images }: { registry: Registry; images: ProductImage[] }) {
+function Orchestrator({ registry, images, avatarLayer }: { registry: Registry; images: ProductImage[]; avatarLayer: RefObject<HTMLDivElement> }) {
   const [active, setActive] = useState<Active | null>(null)
   const lightRef = useRef<THREE.PointLight>(null)
   const tlRef = useRef<gsap.core.Timeline | null>(null)
@@ -82,10 +82,12 @@ function Orchestrator({ registry, images }: { registry: Registry; images: Produc
     gsap.set(el, { y: 0, opacity: 1 })
     tl.to(el, { y: -110, duration: 1.6, ease: 'power1.out' }, 0).to(el, { opacity: 0, duration: 1.6, ease: 'none' }, 0)
   }
-  const deck = useRef<string[]>([])
   const last = useRef<string>('')
   const count = useRef(0)
   const imagesRef = useRef(images)
+  // un mazo barajado por categoría: no se repite una imagen hasta agotar su pool
+  const imageDecks = useRef<Record<string, string[]>>({})
+  const lastImg = useRef<string>('')
   const onDone = useRef<() => void>(() => {})
   useEffect(() => {
     imagesRef.current = images
@@ -93,20 +95,38 @@ function Orchestrator({ registry, images }: { registry: Registry; images: Produc
 
   useEffect(() => {
     let timer: gsap.core.Tween | null = null
+    // saca la siguiente imagen de la categoría sin repetir hasta agotar el mazo
+    const nextImage = (category: BusinessType): string | undefined => {
+      const decks = imageDecks.current
+      if (!decks[category]?.length) {
+        decks[category] = shuffle(imagesRef.current.filter((i) => i.category === category).map((i) => i.src))
+        // que la primera del mazo nuevo no sea la última mostrada
+        if (decks[category].length > 1 && decks[category][decks[category].length - 1] === lastImg.current) decks[category].reverse()
+      }
+      const src = decks[category]?.pop()
+      if (src) lastImg.current = src
+      return src
+    }
     const draw = () => {
       if (!registry.size) return schedule() // los destacados todavía no montaron
-      if (!deck.current.length) {
-        deck.current = shuffle([...registry.keys()])
-        // no repetir el mismo edificio al cambiar de mazo
-        if (deck.current.length > 1 && deck.current[deck.current.length - 1] === last.current) deck.current.reverse()
-      }
-      const id = deck.current.pop()!
+      // agrupa los edificios destacados por categoría
+      const byCat = new Map<BusinessType, string[]>()
+      for (const [id, e] of registry) byCat.set(e.category, [...(byCat.get(e.category) ?? []), id])
+      // elige categoría ponderada por cantidad de imágenes (tienda » servicio/emprendimiento)
+      const cats = [...byCat.keys()]
+      const weights = cats.map((c) => imagesRef.current.filter((i) => i.category === c).length || 1)
+      let r = Math.random() * weights.reduce((a, b) => a + b, 0)
+      let ci = 0
+      while (ci < cats.length - 1 && r >= weights[ci]) (r -= weights[ci]), ci++
+      const category = cats[ci]
+      // elige edificio de esa categoría evitando repetir el anterior
+      let cands = byCat.get(category)!
+      if (cands.length > 1) cands = cands.filter((id) => id !== last.current)
+      const id = cands[Math.floor(Math.random() * cands.length)]
       const entry = registry.get(id)
       if (!entry) return draw()
       last.current = id
-      const pool = imagesRef.current.filter((i) => i.category === entry.category)
-      const img = pool.length ? pool[Math.floor(Math.random() * pool.length)].src : undefined
-      setActive({ key: ++count.current, id, category: entry.category, img, anchor: entry.anchor })
+      setActive({ key: ++count.current, id, category, img: nextImage(category), anchor: entry.anchor })
     }
     const schedule = () => {
       timer = gsap.delayedCall(rand(1.8, 3.2), draw)
@@ -156,19 +176,18 @@ function Orchestrator({ registry, images }: { registry: Registry; images: Produc
     }
   }, [active, registry])
 
-  const c = active ? glowColor(active.category) : '#fff'
   return (
     <>
       <pointLight ref={lightRef} intensity={0} distance={5} decay={1.5} />
       {active?.img && (
     <group position={active.anchor}>
-      <Html key={active.key} transform={false} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+      <Html key={active.key} portal={avatarLayer} transform={false} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
         <div
           ref={(el) => {
             avatarEl.current = el
             attachAvatar()
           }}
-          style={{ opacity: 0, width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', boxShadow: `0 0 16px ${c}`, background: 'transparent' }}
+          style={{ opacity: 0, width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', background: 'transparent' }}
         >
           <img src={active.img} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         </div>
@@ -281,7 +300,7 @@ function CameraRig() {
   return null
 }
 
-export default function HeroCity3D({ images, pointer }: { images: ProductImage[]; pointer: RefObject<{ x: number; y: number }> }) {
+export default function HeroCity3D({ images, pointer, avatarLayer }: { images: ProductImage[]; pointer: RefObject<{ x: number; y: number }>; avatarLayer: RefObject<HTMLDivElement> }) {
   const [registry] = useState<Registry>(() => new Map())
   return (
     <Canvas flat orthographic dpr={[1, 1.75]} camera={{ position: [10, 8.5, 10], zoom: 60, near: 0.1, far: 100 }} gl={{ alpha: true, antialias: true }}>
@@ -294,7 +313,7 @@ export default function HeroCity3D({ images, pointer }: { images: ProductImage[]
         {CITY_PIECES.map((p) => (
           <Piece key={p.id} piece={p} registry={registry} />
         ))}
-        <Orchestrator registry={registry} images={images} />
+        <Orchestrator registry={registry} images={images} avatarLayer={avatarLayer} />
       </Parallax>
     </Canvas>
   )

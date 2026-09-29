@@ -238,15 +238,22 @@
 /* ───────── Base ───────── */
 html {
   color-scheme: dark;
+  overflow-x: clip; /* la escena kenney del hero se sale intencionalmente del viewport (mobile y desktop); clip (no hidden) evita que body se convierta en scroll container y rompa el sticky del nav */
+  -webkit-tap-highlight-color: transparent; /* evita el recuadro celeste de WebKit al tocar en mobile */
 }
 body {
   margin: 0;
+  overflow-x: clip;
   background: var(--bg);
   color: var(--text-body);
   font-family: var(--font-body);
   font-size: var(--fs-body);
   line-height: var(--lh-body);
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 a {
   color: var(--cf-white);
@@ -291,14 +298,18 @@ a:hover {
 }
 
 /* ───────── Landing: responsive del kit ───────── */
-.lp-hero { grid-template-columns: minmax(0, 1fr); }
 .lp-hero > * { min-width: 0; }
-.hero-city { aspect-ratio: 916 / 560; }
+.hero-city {
+  aspect-ratio: 916 / 560;
+  /* difumina el recorte rectangular de la escena; en mobile es un viñeteado parejo */
+  --hero-mask: radial-gradient(ellipse 72% 68% at 50% 50%, #000 78%, transparent 100%);
+  -webkit-mask-image: var(--hero-mask);
+  mask-image: var(--hero-mask);
+}
 .lp-cards { grid-template-columns: 1fr; }
 .lp-join { grid-template-columns: 1fr; }
 .nav-lbl { display: none; }
 .nav-lbl-wrap { position: absolute !important; left: 50%; bottom: 6px; width: 22px; margin-left: -11px; }
-.nav-cta { display: none; }
 .nav-search { display: none; }
 .offer-track { grid-auto-columns: 86%; }
 .offer-track::-webkit-scrollbar,
@@ -326,18 +337,19 @@ a:hover {
 @media (min-width: 1280px) {
   .offer-track { grid-auto-columns: calc((100% - 2 * clamp(16px, 2vw, 28px)) / 3); }
 }
-@media (max-width: 559px) {
-  .nav-brand .cf-neon { display: none; }
-}
 @media (max-width: 899px) {
+  .nav-brand .cf-neon { display: none; }
   .nav-burger { display: inline-flex; }
   .nav-brand img { height: 42px !important; }
   .nav-lbl-wrap { bottom: 11px; }
   .lp-nav { min-height: 64px !important; padding-top: 6px !important; padding-bottom: 6px !important; }
-  .hero-explore-ic { width: 34px !important; height: 34px !important; }
-  .hero-explore-ic > span, .hero-explore-ic svg { width: 18px !important; height: 18px !important; }
-  .hero-col { gap: 32px !important; }
+  .lp-hero { gap: 20px !important; }
   .hero-desc { font-size: 13px !important; line-height: 1.45 !important; }
+  .lp-links { display: none !important; }
+  .nav-cta-label-desktop { display: none; }
+}
+@media (min-width: 900px) {
+  .nav-cta-label-mobile { display: none; }
 }
 .nav-drawer { animation: nav-drawer-in 260ms var(--ease-out); }
 .nav-drawer-scrim { animation: nav-fade-in 200ms ease-out; }
@@ -346,13 +358,8 @@ a:hover {
 @media (min-width: 900px) {
   .nav-drawer-root { display: none; }
 }
-@media (min-width: 640px) {
-  .nav-cta { display: block; }
-}
 @media (min-width: 900px) {
   .nav-search { display: flex; }
-  /* En desktop el buscador reemplaza al botón "abrir mapa" */
-  .nav-search + .nav-cta { display: none; }
   /* Desktop: marca más grande, links alineados a la izquierda y buscador a continuación */
   .lp-nav { justify-content: flex-start !important; gap: 36px !important; min-height: 88px !important; }
   .nav-left { margin-right: auto; }
@@ -365,14 +372,56 @@ a:hover {
   .nav-lbl { display: inline; }
   .nav-lbl-wrap { position: relative !important; left: auto; bottom: auto; width: auto; margin-left: 0; }
 }
+.hero-city-wrap { position: relative; order: 4; --bleed-r: 0px; --bleed-b: 0px; }
+.hero-avatars { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+/* por encima de la capa de avatares: los círculos se desvanecen por debajo del texto */
+.hero-brand, .hero-explore, .hero-location, .hero-desc, .hero-search { position: relative; z-index: 2; }
+.hero-head { display: contents; }
+@media (max-width: 959px) {
+  /* bloque centrado con el contenido alineado a la izquierda: todo arranca en el borde de la canasta */
+  .hero-head { display: flex; flex-direction: column; align-items: flex-start; align-self: center; gap: inherit; order: 1; }
+}
 @media (min-width: 960px) {
-  .lp-hero { grid-template-columns: 1.1fr 1fr; }
-  .hero-city { max-width: 1040px !important; }
+  /* la section ocupa el alto visible bajo el nav; la columna de texto se reparte entre
+     un grupo arriba (marca/explorá/ubicación) y otro abajo (descripción/buscador) */
+  #hero { z-index: 1; }
+  #hero .lp-hero { min-height: calc(100vh - 88px - 80px) !important; }
+  .hero-location { order: 3 !important; }
+  .hero-desc { order: 4 !important; margin-top: auto !important; }
+  .hero-search { order: 5 !important; }
+  .hero-brand, .hero-explore, .hero-location { flex: none; }
+  /* la escena se saca del flujo y se agranda: llena el alto de la section y se sale por la esquina
+     inferior derecha (más allá del borde derecho Y del borde inferior), hasta donde está "abrir mapa" */
+  .hero-city-wrap {
+    position: absolute !important;
+    top: 0;
+    bottom: -10vh;
+    left: clamp(540px, 42vw, 760px);
+    right: -8vw;
+    width: auto;
+    --bleed-r: 8vw;
+    --bleed-b: 10vh;
+  }
+  .hero-city {
+    width: 100%;
+    height: 100%;
+    max-width: none !important;
+    /* sólida hacia la esquina inferior derecha (donde sobresale a propósito); se atenúa sólo cerca
+       del texto, arriba a la izquierda */
+    --hero-mask: radial-gradient(ellipse 145% 145% at 100% 100%, #000 48%, transparent 100%);
+  }
 }
 @media (max-width: 959px) {
-  /* la escena llega hasta los bordes del viewport (sin el padding lateral de la sección) */
-  .hero-city { width: calc(100% + 2 * var(--gutter)) !important; margin-inline: calc(-1 * var(--gutter)); }
-  .hero-brand { justify-content: center; }
+  /* la escena se sale un poco más allá de los bordes del viewport (más ancha que la pantalla) */
+  .hero-city-wrap {
+    width: calc(100% + 2 * var(--gutter) + 16vw) !important;
+    margin-inline: calc(-1 * var(--gutter) - 8vw);
+    --bleed-r: calc(var(--gutter) + 8vw);
+  }
+  .hero-brand { justify-content: center; align-items: center !important; }
+  /* en mobile el basket queda bajo respecto al texto: se sube con transform
+     (no margin) para no agregar espacio entre el logo y lo de abajo */
+  .hero-basket-img { margin-bottom: 0 !important; transform: translateY(clamp(-20px, -4vw, -10px)); }
 }
 @media (max-width: 899px) {
   .offers-art { top: -40px !important; right: -14vw !important; width: 50vw !important; max-width: 300px; translate: none; z-index: 0; }
