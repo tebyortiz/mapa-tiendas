@@ -6,7 +6,7 @@ import { Wordmark } from '../../components/brand/Wordmark'
 import { Button } from '../../components/ui/Button'
 import { Icon } from '../../components/ui/Icon'
 import { IconButton } from '../../components/ui/IconButton'
-import { SearchInput } from '../../components/ui/SearchInput'
+import { SearchInput, SEARCH_SUGGESTIONS } from '../../components/ui/SearchInput'
 
 interface NavLinkDef {
   id: string
@@ -115,7 +115,7 @@ function NavDrawer({ base, search, onClose }: { base: string; search?: LandingNa
             {fixedSpacer}
             <p style={introText}>¿Qué se te antoja hoy? Buscá y encontrá lo que necesitás, cerca tuyo.</p>
             <form onSubmit={submit} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>
-              <SearchInput glass value={draft} onChange={(v) => { setDraft(v); if (!v) search.onSearch('') }} placeholder="Buscar cerca tuyo…" style={{ flex: 1, minWidth: 0 }} />
+              <SearchInput glass value={draft} onChange={(v) => { setDraft(v); if (!v) search.onSearch('') }} placeholder="Buscar cerca tuyo…" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
               <Button htmlType="submit" type="todas" icon="search" aria-label="Buscar" style={{ width: 48, padding: 0, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }} />
             </form>
             {fixedSpacer}
@@ -178,7 +178,7 @@ export function LandingNav({ onOpenMap, base = '', sticky = true, cta = true, se
         aria-hidden="true"
         style={{ position: 'absolute', inset: 0, zIndex: -1, background: 'rgba(7,7,13,.72)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', borderBottom: '1px solid var(--border)' }}
       />
-      <div className="lp-nav" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 76, padding: '14px var(--gutter)' }}>
+      <div className={`lp-nav${cta ? ' lp-nav-landing' : ''}`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 76, padding: '14px var(--gutter)' }}>
         <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button type="button" className="nav-burger" aria-label="Abrir menú" onClick={() => setMenu(true)} style={{ width: 44, height: 44, flex: 'none', alignItems: 'center', justifyContent: 'center', padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }}>
             <Icon name="list-sort-descending" size={30} color="#fff" style={{ filter: 'drop-shadow(0 0 3px #fff) drop-shadow(0 0 9px rgba(255,255,255,.8)) drop-shadow(0 0 18px rgba(255,255,255,.45))' }} />
@@ -189,24 +189,43 @@ export function LandingNav({ onOpenMap, base = '', sticky = true, cta = true, se
             <a href="#hero" className="nav-brand" style={{ display: 'flex', textDecoration: 'none' }}>{brand}</a>
           )}
         </div>
+        <nav className="lp-links" style={{ display: 'flex', gap: 6 }}>
+          {/* En el mapa (cta=false) los tipos ya viven en los filtros; el navbar solo ofrece Ofertas. */}
+          {(cta ? NAV_LINKS : NAV_LINKS.filter((l) => l.id === 'ofertas')).map((l, i) => (
+            <NeonNavLink key={l.id} l={l} i={i} base={base} />
+          ))}
+        </nav>
         <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <nav className="lp-links" style={{ display: 'flex', gap: 6 }}>
-            {NAV_LINKS.map((l, i) => <NeonNavLink key={l.id} l={l} i={i} base={base} />)}
-          </nav>
           {search && !cta && <NavSearch query={search.query} onSearch={search.onSearch} />}
-          {cta && (
-            <button
-              type="button"
-              className="nav-cta"
-              aria-label="Abrir mapa"
-              title="Abrir mapa"
-              onClick={onOpenMap}
-              style={{ height: 44, flex: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '0 18px', border: 'none', borderRadius: 'var(--radius-pill)', cursor: 'pointer', background: 'var(--rainbow-grad)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.25)', font: '800 14px var(--font-body)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)', whiteSpace: 'nowrap' }}
+          {/* En el mapa mobile no va el botón "Mapa"; el extremo derecho ofrece Ofertas (la categoría que no está en los filtros). */}
+          {!cta && (
+            <Link
+              to={`${base}#ofertas`}
+              className="nav-offers-m"
+              aria-label="Ver ofertas"
+              title="Ofertas"
+              style={{ height: 44, flex: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '0 16px', borderRadius: 'var(--radius-pill)', textDecoration: 'none', background: 'var(--rainbow-grad)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.25)', font: '800 14px var(--font-body)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)', whiteSpace: 'nowrap' }}
             >
-              <Icon name="map" size={18} color="#fff" />
-              <span className="nav-cta-label-desktop">abrir mapa</span>
-              <span className="nav-cta-label-mobile">mapa</span>
-            </button>
+              <Icon name="badge-percent" size={18} color="#fff" />
+              <span>Ofertas</span>
+            </Link>
+          )}
+          {cta && (
+            <>
+              {/* Ingresar: solo desktop (en mobile la cuenta vive en el menú lateral). Va antes de "Mapa". */}
+              <Button variant="secondary" icon="log-in" className="nav-login" style={{ height: 44 }}>Ingresar</Button>
+              <button
+                type="button"
+                className="nav-cta"
+                aria-label="Abrir mapa"
+                title="Abrir mapa"
+                onClick={onOpenMap}
+                style={{ height: 44, flex: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '0 18px', border: 'none', borderRadius: 'var(--radius-pill)', cursor: 'pointer', background: 'var(--rainbow-grad)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.25)', font: '800 14px var(--font-body)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)', whiteSpace: 'nowrap' }}
+              >
+                <Icon name="map" size={18} color="#fff" />
+                <span>Mapa</span>
+              </button>
+            </>
           )}
         </div>
       </div>

@@ -4,7 +4,7 @@ import {
   ArrowRight, BadgePercent, Bone, BriefcaseMedical, CalendarClock, Cake, CarFront, ChevronDown, ChevronLeft,
   ChevronRight, ChevronUp, Clock, ConciergeBell, Dog, Droplets, Footprints, Gamepad2, Gift, Globe, Hammer,
   HandPlatter, Headphones, KeyRound, LayoutGrid, ListSortDescending, LocateFixed, LogIn, Map, MapPin, MapPinned, MessageCircle, Minus,
-  Navigation, Palette, Pizza, Plus, Scissors, Search, Shirt, ShoppingBag, Smartphone, Sofa, Sparkles, Store,
+  Navigation, Palette, Pizza, Plus, Scissors, Search, Shirt, ShoppingBag, Signpost, Smartphone, Sofa, Sparkles, Store,
   Tag, UserPlus, UserRound, UtensilsCrossed, Wrench, X, Zap,
 } from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
@@ -61,6 +61,7 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
   search: Search,
   shirt: Shirt,
   'shopping-bag': ShoppingBag,
+  signpost: Signpost,
   smartphone: Smartphone,
   sofa: Sofa,
   sparkles: Sparkles,

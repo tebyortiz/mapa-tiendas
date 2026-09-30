@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Business, Offer } from '../data/types'
 import { fetchNearby, getPosition, toBusiness } from './geoApi'
 import type { ApiResult } from './geoApi'
+import { reverseGeocode } from './mapbox'
 
 export interface Nearby {
   pos: { lat: number; lng: number }
@@ -22,7 +23,7 @@ const cityOf = (results: ApiResult[]): string | undefined => {
   return best?.find((c) => c.normalize('NFD') !== c) ?? best?.[0]
 }
 
-const KEY = 'nearby-v4'
+const KEY = 'nearby-v5'
 
 export const loadNearby = (): Nearby | null => {
   try {
@@ -45,8 +46,10 @@ export const saveNearby = (n: Nearby) => {
 export async function locateAndFetch(): Promise<Nearby> {
   const { latitude, longitude } = (await getPosition()).coords
   console.log('[geo] ubicación del usuario:', { latitude, longitude })
-  const results = await fetchNearby(latitude, longitude)
-  const n: Nearby = { pos: { lat: latitude, lng: longitude }, businesses: results.map(toBusiness), city: cityOf(results) }
+  // La ciudad real sale del reverse-geocoding de Mapbox (según lat/lng); si falla,
+  // se usa la ciudad más frecuente entre los comercios cercanos como respaldo.
+  const [results, geoCity] = await Promise.all([fetchNearby(latitude, longitude), reverseGeocode(latitude, longitude)])
+  const n: Nearby = { pos: { lat: latitude, lng: longitude }, businesses: results.map(toBusiness), city: geoCity ?? cityOf(results) }
   saveNearby(n)
   return n
 }
@@ -73,11 +76,16 @@ export function useNearby() {
     }
   }, [])
 
+  // Al entrar a la landing se dispara la solicitud de ubicación: si el permiso ya
+  // está concedido se consulta en silencio; si está en "prompt" se muestra el modal
+  // nativo del navegador. Solo se omite cuando ya fue denegado (no se puede re-pedir).
   useEffect(() => {
     if (nearby) return
-    navigator.permissions?.query({ name: 'geolocation' }).then((p) => {
-      if (p.state === 'granted') void locate()
-    }).catch(() => {})
+    const perms = navigator.permissions?.query({ name: 'geolocation' })
+    if (!perms) return void locate()
+    perms.then((p) => {
+      if (p.state !== 'denied') void locate()
+    }).catch(() => void locate())
   }, [nearby, locate])
 
   return { nearby, loading, locate }

@@ -20,7 +20,7 @@ export default function LandingPage() {
       <LandingHero onOpenMap={() => open()} onSearch={search} city={geo.nearby?.city} />
       <LandingOffers onOpenMap={open} geo={geo} />
       <LandingCatalog onOpenMap={open} />
-      <LandingMostRequested onOpenMap={open} />
+      <LandingMostRequested onOpenMap={open} geo={geo} />
       <LandingNearby onOpenMap={open} geo={geo} />
       <LandingJoin />
       <LandingFooter />

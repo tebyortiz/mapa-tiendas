@@ -16,8 +16,8 @@ export function LandingCatalog({ onOpenMap }: { onOpenMap: OpenMap }) {
     <section id="explorar" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '72px var(--gutter)' }}>
       <GlowBackdrop palette="emprendimiento" intensity={0.22} />
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 'var(--container)', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 32 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'clamp(12px,2vw,20px)' }}>
+        <div className="catalog-headwrap" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="catalog-head" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px,2vw,20px)' }}>
             <div className="catalog-art" aria-hidden="true" style={{ flex: 'none', width: 'clamp(64px,7vw,104px)', pointerEvents: 'none' }}>
               <img src="/assets/illustrations/map-catalog-3d.png" alt="" style={{ display: 'block', width: '100%', height: 'auto', filter: 'drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 22px rgba(79,169,238,.35)) drop-shadow(0 0 36px rgba(250,110,78,.2))' }} />
             </div>

@@ -99,9 +99,14 @@ export default function MapPage() {
     try {
       if (!tunuyan) {
         const results = await fetchNearby(MAP_CENTER.lat, MAP_CENTER.lng)
+        console.log('[tunuyan] comercios recibidos:', results.length)
         setApiBiz(results.map(toBusiness))
         setUserPos(MAP_CENTER)
         setTunuyan(true)
+        // Los comercios del backend son de tipo "tienda": si había un filtro activo quedarían ocultos, así que se resetea para mostrarlos.
+        setType('todas')
+        setCat('todas')
+        setPicked(false)
         flash('Viendo Tunuyán')
       } else {
         const n = realNearby.current ?? (await locateAndFetch())

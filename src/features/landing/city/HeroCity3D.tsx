@@ -78,9 +78,9 @@ function Orchestrator({ registry, images, avatarLayer }: { registry: Registry; i
     const el = avatarEl.current
     if (!tl || !el || avatarDone.current) return
     avatarDone.current = true
-    // el círculo arranca opaco y sube sin parar: cuanto más sube, más se desvanece
+    // el círculo sube lento y se mantiene opaco casi todo el trayecto; recién al llegar arriba se desvanece rápido
     gsap.set(el, { y: 0, opacity: 1 })
-    tl.to(el, { y: -110, duration: 1.6, ease: 'power1.out' }, 0).to(el, { opacity: 0, duration: 1.6, ease: 'none' }, 0)
+    tl.to(el, { y: -120, duration: 2.5, ease: 'power1.out' }, 0).to(el, { opacity: 0, duration: 0.45, ease: 'power2.in' }, 2.05)
   }
   const last = useRef<string>('')
   const count = useRef(0)
@@ -217,9 +217,11 @@ function Parallax({ pointer, children }: { pointer: RefObject<{ x: number; y: nu
   return <group ref={group}>{children}</group>
 }
 
-const TILE_COLORS = { grass: '#46b57a', lot: '#59607a', plaza: '#8b90a8' } as const
+const TILE_COLORS = { grass: '#46b57a', lot: '#59607a', plaza: '#8b90a8', road: '#8b90a8' } as const
 
-/** Base del pueblo: una baldosa por celda no vacía (césped, lote o plaza), con el borde irregular del plano. */
+/** Base del pueblo: una baldosa por celda no vacía (césped, lote, plaza o asfalto), con el borde irregular del plano.
+ *  La baldosa de asfalto va un poco más abajo, justo debajo de la pieza de calle, para rellenar las esquinas
+ *  transparentes de las curvas sin superponerse con la superficie de la calle. */
 function Ground() {
   const geo = useMemo(() => new THREE.BoxGeometry(1, 0.1, 1), [])
   const mats = useMemo(
@@ -227,6 +229,7 @@ function Ground() {
       grass: new THREE.MeshStandardMaterial({ color: TILE_COLORS.grass }),
       lot: new THREE.MeshStandardMaterial({ color: TILE_COLORS.lot }),
       plaza: new THREE.MeshStandardMaterial({ color: TILE_COLORS.plaza }),
+      road: new THREE.MeshStandardMaterial({ color: TILE_COLORS.road }),
     }),
     [],
   )
@@ -234,7 +237,7 @@ function Ground() {
     <>
       {GROUND_TILES.map((t) => {
         const [x, , z] = cellPosition(t.fila, t.columna)
-        return <mesh key={`${t.fila}-${t.columna}`} geometry={geo} material={mats[t.kind]} position={[x, -0.05, z]} />
+        return <mesh key={`${t.fila}-${t.columna}`} geometry={geo} material={mats[t.kind]} position={[x, t.kind === 'road' ? -0.07 : -0.05, z]} />
       })}
     </>
   )
@@ -302,6 +305,17 @@ function CameraRig() {
 
 export default function HeroCity3D({ images, pointer, avatarLayer }: { images: ProductImage[]; pointer: RefObject<{ x: number; y: number }>; avatarLayer: RefObject<HTMLDivElement> }) {
   const [registry] = useState<Registry>(() => new Map())
+  // En mobile el contenedor (aspect-ratio + will-change) a veces monta con tamaño 0 y R3F no vuelve
+  // a medir hasta el primer scroll/resize, dejando la escena en blanco. Forzamos la remedición al montar.
+  useEffect(() => {
+    const kick = () => window.dispatchEvent(new Event('resize'))
+    const raf1 = requestAnimationFrame(() => requestAnimationFrame(kick))
+    const t = setTimeout(kick, 300)
+    return () => {
+      cancelAnimationFrame(raf1)
+      clearTimeout(t)
+    }
+  }, [])
   return (
     <Canvas flat orthographic dpr={[1, 1.75]} camera={{ position: [10, 8.5, 10], zoom: 60, near: 0.1, far: 100 }} gl={{ alpha: true, antialias: true }}>
       <CameraRig />
