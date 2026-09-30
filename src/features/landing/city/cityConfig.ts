@@ -13,7 +13,7 @@ export type CityPiece = {
   offset?: [number, number]
 }
 
-export type GroundKind = 'grass' | 'lot' | 'plaza'
+export type GroundKind = 'grass' | 'lot' | 'plaza' | 'road'
 export type GroundTile = { fila: number; columna: number; kind: GroundKind }
 
 export const CELL = 1
@@ -42,6 +42,23 @@ const MAP: string[] = Array.from({ length: H }, (_, f) =>
     return 'B'
   }).join(''),
 )
+
+// Limpia "muñones" de calle: celdas 'r' que el borde irregular dejó sin ningún vecino de calle
+// ortogonal. Se veían como una baldosa suelta y cortada, flotando en el borde del pueblo.
+const ROAD_NEIGHBORS: [number, number][] = [[0, 1], [0, -1], [1, 0], [-1, 0]]
+for (let pass = 0; pass < 4; pass++) {
+  let changed = false
+  for (let f = 0; f < H; f++) {
+    for (let c = 0; c < W; c++) {
+      if (MAP[f][c] !== 'r') continue
+      if (ROAD_NEIGHBORS.some(([df, dc]) => MAP[f + df]?.[c + dc] === 'r')) continue
+      MAP[f] = MAP[f].slice(0, c) + '.' + MAP[f].slice(c + 1)
+      changed = true
+    }
+  }
+  if (!changed) break
+}
+
 export const ROWS = MAP.length
 export const COLS = MAP[0].length
 
@@ -68,6 +85,9 @@ for (let fila = 0; fila < ROWS; fila++) {
     if (ch === '.') continue
 
     if (ch === 'r') {
+      // baldosa de asfalto debajo de la calle: las curvas (road-bend) no cubren todo el cuadrito y,
+      // sin base, sus esquinas se veían transparentes (huecos), sobre todo en la rotonda de la fuente
+      ground.push({ fila, columna, kind: 'road' })
       // autotile: elige pieza y rotación según los vecinos que también son calle
       const open = DIRS.map(([df, dc]) => isRoad(fila + df, columna + dc))
       const idx = open.flatMap((o, i) => (o ? [i] : []))
@@ -125,9 +145,12 @@ for (let fila = 0; fila < ROWS; fila++) {
     const mix = hash(fila, columna, 13)
     const isCommercial = nearCenter ? mix > 0.18 : mix < 0.08
     const pick = Math.floor(hash(fila, columna, 9) * 100)
+    // celdas que caen delante de la fuente hacia la cámara (+fila y +columna) y cerca de ella:
+    // se limitan al comercio más bajo para no taparla en la vista en diagonal
+    const blocksFountain = fila > FR && columna > FC && norm(fila, columna) < 0.5
     let tipo: string
     if (isCommercial) {
-      const tier = hash(fila, columna, 11)
+      const tier = blocksFountain ? 0 : hash(fila, columna, 11)
       tipo = tier < 0.72 ? SHOPS_LOW[pick % SHOPS_LOW.length]
         : tier < 0.93 ? SHOPS_MID[pick % SHOPS_MID.length]
         : tier < 0.99 ? SHOPS_HIGH[pick % SHOPS_HIGH.length]
@@ -145,14 +168,17 @@ export const FOUNTAIN_POSITION = (() => {
   return [0, 0, 0] as [number, number, number]
 })()
 
-/** 9 edificios fijos (mismos siempre), 3 por categoría: repartidos por ángulo alrededor de la fuente, alternando categorías */
+/** Edificios fijos que se encienden y muestran una imagen: repartidos por ángulo alrededor de la
+ *  fuente y por toda la extensión del pueblo —centro, anillo y periferia, incluidas las casas
+ *  suburbanas (techo verde)—, alternando categorías. */
 export const FEATURED: Record<string, BusinessType> = (() => {
   const cats: BusinessType[] = ['tienda', 'servicio', 'emprendimiento']
   const cands = pieces
-    .filter((p) => p.id.startsWith('b-') && !p.tipo.startsWith('building-type-') && norm(p.fila, p.columna) > 0.3 && norm(p.fila, p.columna) < 0.8)
+    .filter((p) => p.id.startsWith('b-') && norm(p.fila, p.columna) > 0.3)
     .sort((a, b) => Math.atan2(a.fila - FR, a.columna - FC) - Math.atan2(b.fila - FR, b.columna - FC))
+  const count = Math.min(24, cands.length)
   const out: Record<string, BusinessType> = {}
-  for (let i = 0; i < 9; i++) out[cands[Math.floor((i * cands.length) / 9)].id] = cats[i % 3]
+  for (let i = 0; i < count; i++) out[cands[Math.floor((i * cands.length) / count)].id] = cats[i % 3]
   return out
 })()
 
@@ -170,16 +196,16 @@ export const piecePosition = (p: CityPiece): [number, number, number] => {
   return [x + (p.offset?.[0] ?? 0), y, z + (p.offset?.[1] ?? 0)]
 }
 
-/** Colores del sistema de diseño (index.css): tienda=coral, servicio=cyan (azul claro), emprendimiento=lilac */
-const GLOW_VARS: Record<BusinessType, [string, string]> = {
-  tienda: ['--cf-coral', '#ff6f61'],
-  servicio: ['--cf-cyan', '#2dd4f0'],
-  emprendimiento: ['--cf-lilac', '#c4a1ff'],
+/** Colores del glow de los edificios de la escena 3D. Son versiones más saturadas de los tonos del
+ *  sistema (tienda=coral/naranja, servicio=cyan/azul claro, emprendimiento=lilac/violeta): los tokens
+ *  originales son claros y, al multiplicarse con la textura del edificio (emissiveMap), la iluminación
+ *  se lavaba hacia el blanco. Aquí se usan tonos más profundos para que el color se note. */
+const GLOW_COLORS: Record<BusinessType, string> = {
+  tienda: '#ff4a2a',        // naranja/coral más intenso
+  servicio: '#0bb8e6',      // azul cian más saturado
+  emprendimiento: '#9a5cff', // violeta más profundo
 }
 
-export const glowColor = (t: BusinessType): string => {
-  const [name, fallback] = GLOW_VARS[t]
-  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
-}
+export const glowColor = (t: BusinessType): string => GLOW_COLORS[t]
 
 export type ProductImage = { src: string; category: BusinessType }

@@ -22,11 +22,13 @@ function OfferCard({ o, businesses, onMore }: { o: Offer; businesses: Business[]
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, padding: '0 2px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
           <ImageSlot src={o.storeImage} shape="circle" placeholder="Foto" style={{ width: 44, height: 44, flex: 'none', boxShadow: 'inset 0 0 0 1px var(--border-strong)', borderRadius: '50%' }} />
-          <TypeAvatar type={o.type} category={biz?.category} />
           <span style={{ font: '800 15px/1.2 var(--font-body)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-strong)' }}>{o.store}</span>
         </div>
-        <h3 style={{ margin: 0, font: '800 clamp(18px,1.8vw,24px)/1.2 var(--font-body)', textTransform: 'uppercase', color: OFFER_C[o.type] }}>{o.title}</h3>
-        <p style={{ margin: '2px 0 0', font: '400 14px/1.5 var(--font-body)', color: 'var(--text-muted)' }}>{o.description}</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <TypeAvatar type={o.type} category={biz?.category} size={44} />
+          <h3 style={{ margin: 0, font: '800 clamp(18px,1.8vw,24px)/1.2 var(--font-body)', textTransform: 'uppercase', color: OFFER_C[o.type] }}>{o.title}</h3>
+        </div>
+        <p style={{ margin: '2px 0 0', minHeight: '3em', font: '400 14px/1.5 var(--font-body)', color: 'var(--text-muted)' }}>{o.description}</p>
         {o.until && <p style={{ margin: 0, font: '700 13px var(--font-body)', color: 'var(--text-strong)' }}>Hasta el {o.until}</p>}
         <div style={{ marginTop: 10 }}><Button type={o.type} size="sm" iconRight="arrow-right" onClick={onMore}>más info</Button></div>
       </div>
@@ -36,7 +38,7 @@ function OfferCard({ o, businesses, onMore }: { o: Offer; businesses: Business[]
 
 function OfferMore({ onOpenMap }: { onOpenMap: OpenMap }) {
   return (
-    <div style={{ position: 'relative', aspectRatio: '2.15 / 1', borderRadius: 'var(--radius-panel)', overflow: 'hidden', background: 'var(--surface)', boxShadow: 'inset 0 0 0 1px var(--border-strong)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 20, textAlign: 'center' }}>
+    <div style={{ position: 'relative', boxSizing: 'border-box', aspectRatio: '2.15 / 1', borderRadius: 'var(--radius-panel)', overflow: 'hidden', background: 'var(--surface)', boxShadow: 'inset 0 0 0 1px var(--border-strong)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 20, textAlign: 'center' }}>
       <GlowBackdrop palette="rainbow" intensity={0.35} parallax={false} />
       <div className="cf-neon cf-neon-on" style={{ position: 'relative', fontSize: 'clamp(20px,2.2vw,30px)', lineHeight: 1.15 }}>
         DESCUBRÍ MÁS OFERTAS<br />EN TU ZONA
@@ -54,7 +56,7 @@ export function LandingOffers({ onOpenMap, geo }: { onOpenMap: OpenMap; geo: Ret
   return (
     <section id="ofertas" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '64px 0' }}>
       <GlowBackdrop palette="tienda" intensity={0.3} />
-      <div style={{ position: 'relative', zIndex: 1 }}>
+      <div className="offers-body" style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ position: 'relative', maxWidth: 'var(--container)', margin: '0 auto' }}>
           <SectionHead className="offers-head" title={<>OFERTAS DESTACADAS<br />DE TU ZONA</>} subtitle="Te presentamos las ofertas vigentes en: " city={nearby?.city ?? 'Tunuyán'} />
           {!nearby && (

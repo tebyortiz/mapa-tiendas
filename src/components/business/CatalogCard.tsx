@@ -38,7 +38,7 @@ export function CatalogCard({ type = 'tienda', title, description, image, cta = 
   }, [])
   return (
     <div {...bind} style={{ display: 'flex', flexDirection: 'column', gap: 16, ...style }}>
-      <div onClick={onClick} style={{ position: 'relative', height, borderRadius: 'var(--radius-sheet)', overflow: 'hidden', cursor: 'pointer', background: 'var(--surface)', boxShadow: h ? t.glow : 'inset 0 0 0 1px var(--border)', transition: 'box-shadow var(--dur-slow) var(--ease-out)' }}>
+      <div onClick={onClick} style={{ position: 'relative', height: `var(--catalog-card-h, ${height}px)`, borderRadius: 'var(--radius-sheet)', overflow: 'hidden', cursor: 'pointer', background: 'var(--surface)', boxShadow: h ? t.glow : 'inset 0 0 0 1px var(--border)', transition: 'box-shadow var(--dur-slow) var(--ease-out)' }}>
         <div style={{ position: 'absolute', inset: 0, background: `url(${image}) center/cover`, transform: h ? 'scale(1.04)' : 'scale(1)', transition: 'transform var(--dur-enter) var(--ease-out)' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(7,7,13,0) 50%,rgba(7,7,13,.6) 100%)' }} />
         <div style={{ position: 'absolute', left: 16, right: 16, bottom: 22, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>

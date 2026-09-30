@@ -11,10 +11,8 @@ export type OpenMap = (type?: BusinessType, id?: number) => void
 
 export function LocationRow({ city = 'Tunuyán' }: { city?: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-      <div style={{ width: 44, height: 44, flex: 'none', borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,.2)', boxShadow: 'inset 0 0 0 2.5px rgba(255,255,255,.6), 0 0 14px rgba(255,255,255,.35), 0 0 32px rgba(255,255,255,.18)' }}>
-        <Icon name="map-pin" size={20} color="#fff" style={{ filter: 'drop-shadow(0 0 2px rgba(255,255,255,.9)) drop-shadow(0 0 6px rgba(255,255,255,.6))' }} />
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <Icon name="map-pin" size={30} color="#fff" style={{ flex: 'none', filter: 'drop-shadow(0 0 3px rgba(255,255,255,.95)) drop-shadow(0 0 8px rgba(255,255,255,.85)) drop-shadow(0 0 18px rgba(255,255,255,.5))' }} />
       <span style={{ display: 'inline-flex', alignItems: 'center', height: 44, padding: '0 18px', borderRadius: 999, background: 'var(--rainbow-grad)', boxShadow: 'var(--glow-rainbow)', font: '800 15px var(--font-body)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>{city}</span>
     </div>
   )

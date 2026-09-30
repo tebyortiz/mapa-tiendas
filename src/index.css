@@ -123,6 +123,8 @@
   --gutter-mobile: 20px;
   --gutter-desktop: 40px;
   --gutter: clamp(16px, 2.4vw, 32px);
+  /* aire superior común en mobile: título de cada minisección respecto al borde superior */
+  --sec-top-mobile: clamp(44px, 10vh, 96px);
   --container: 1760px;
   --touch-min: 44px;
   --radius-pill: 999px;
@@ -344,12 +346,14 @@ a:hover {
   .nav-lbl-wrap { bottom: 11px; }
   .lp-nav { min-height: 64px !important; padding-top: 6px !important; padding-bottom: 6px !important; }
   .lp-hero { gap: 20px !important; }
-  .hero-desc { font-size: 13px !important; line-height: 1.45 !important; }
+  .hero-desc { font-size: 15px !important; line-height: 1.5 !important; }
   .lp-links { display: none !important; }
-  .nav-cta-label-desktop { display: none; }
+  /* la cuenta en mobile vive en el menú lateral, no en la barra */
+  .nav-login { display: none !important; }
 }
+/* El botón Ofertas del navbar es solo para el mapa en mobile; en desktop Ofertas ya está en los links */
 @media (min-width: 900px) {
-  .nav-cta-label-mobile { display: none; }
+  .nav-offers-m { display: none !important; }
 }
 .nav-drawer { animation: nav-drawer-in 260ms var(--ease-out); }
 .nav-drawer-scrim { animation: nav-fade-in 200ms ease-out; }
@@ -363,6 +367,10 @@ a:hover {
   /* Desktop: marca más grande, links alineados a la izquierda y buscador a continuación */
   .lp-nav { justify-content: flex-start !important; gap: 36px !important; min-height: 88px !important; }
   .nav-left { margin-right: auto; }
+  /* Landing: brand a la izquierda, links neon centrados en la barra, y a la derecha Ingresar + Mapa */
+  .lp-nav.lp-nav-landing { justify-content: space-between !important; }
+  .lp-nav-landing .nav-left { margin-right: 0; }
+  .lp-nav-landing .lp-links { position: absolute; left: 50%; transform: translateX(-50%); }
   .nav-brand img { height: 40px !important; }
   .nav-brand .cf-neon { font-size: 28px !important; position: relative; top: 3px; }
   .nav-search { flex: none; width: clamp(300px, 28vw, 460px); }
@@ -378,8 +386,9 @@ a:hover {
 .hero-brand, .hero-explore, .hero-location, .hero-desc, .hero-search { position: relative; z-index: 2; }
 .hero-head { display: contents; }
 @media (max-width: 959px) {
-  /* bloque centrado con el contenido alineado a la izquierda: todo arranca en el borde de la canasta */
-  .hero-head { display: flex; flex-direction: column; align-items: flex-start; align-self: center; gap: inherit; order: 1; }
+  /* bloque centrado con el contenido alineado a la izquierda: todo arranca en el borde de la canasta.
+     gap propio (más chico que el de .lp-hero) para acercar "explorá tu ciudad" y la ubicación al logo */
+  .hero-head { display: flex; flex-direction: column; align-items: flex-start; align-self: center; gap: clamp(6px, 2vw, 12px); order: 1; }
 }
 @media (min-width: 960px) {
   /* la section ocupa el alto visible bajo el nav; la columna de texto se reparte entre
@@ -387,8 +396,8 @@ a:hover {
   #hero { z-index: 1; }
   #hero .lp-hero { min-height: calc(100vh - 88px - 80px) !important; }
   .hero-location { order: 3 !important; }
-  .hero-desc { order: 4 !important; margin-top: auto !important; }
-  .hero-search { order: 5 !important; }
+  .hero-desc { order: 4 !important; margin-top: auto !important; max-width: var(--hero-brand-w, 500px) !important; }
+  .hero-search { order: 5 !important; max-width: var(--hero-brand-w, 560px) !important; }
   .hero-brand, .hero-explore, .hero-location { flex: none; }
   /* la escena se saca del flujo y se agranda: llena el alto de la section y se sale por la esquina
      inferior derecha (más allá del borde derecho Y del borde inferior), hasta donde está "abrir mapa" */
@@ -406,9 +415,9 @@ a:hover {
     width: 100%;
     height: 100%;
     max-width: none !important;
-    /* sólida hacia la esquina inferior derecha (donde sobresale a propósito); se atenúa sólo cerca
-       del texto, arriba a la izquierda */
-    --hero-mask: radial-gradient(ellipse 145% 145% at 100% 100%, #000 48%, transparent 100%);
+    /* en desktop la escena se muestra a opacidad completa, sin difuminado hacia el texto (izquierda) */
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }
 @media (max-width: 959px) {
@@ -417,6 +426,11 @@ a:hover {
     width: calc(100% + 2 * var(--gutter) + 16vw) !important;
     margin-inline: calc(-1 * var(--gutter) - 8vw);
     --bleed-r: calc(var(--gutter) + 8vw);
+    /* en mobile la escena arranca un poco más abajo (desplazamiento base, no afecta el flujo:
+       el texto y el buscador de abajo quedan donde ya estaban) y se suma el parallax de scroll
+       (--parallax-y lo setea Hero.tsx) */
+    transform: translate3d(0, calc(clamp(24px, 6vw, 48px) + var(--parallax-y, 0px)), 0);
+    will-change: transform;
   }
   .hero-brand { justify-content: center; align-items: center !important; }
   /* en mobile el basket queda bajo respecto al texto: se sube con transform
@@ -430,7 +444,27 @@ a:hover {
   .offers-head p { max-width: 70%; }
 }
 @media (min-width: 900px) {
-  .offers-head { padding-right: calc(clamp(150px, 13vw, 220px) + 2 * var(--gutter)) !important; }
+  /* Desktop: cada minisección ocupa el alto de la pantalla, con su contenido centrado */
+  #ofertas.lp-sec,
+  #explorar.lp-sec,
+  #mas-solicitados.lp-sec {
+    min-height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  /* Ofertas / Más solicitados: el título queda donde está y el subtítulo + ubicación bajan */
+  .offers-head > p,
+  .requested-head > p { margin-top: clamp(20px, 4vh, 56px) !important; }
+  /* Ofertas: la ilustración con movimiento (carrito) se ve mucho más grande */
+  .offers-art { width: clamp(240px, 22vw, 420px) !important; }
+  .offers-head { padding-right: calc(clamp(240px, 22vw, 420px) + 2 * var(--gutter)) !important; }
+  /* Catálogo: mapa + texto centrados horizontalmente y cards mucho más altas */
+  .catalog-headwrap { align-items: center; text-align: center; }
+  .lp-cards { --catalog-card-h: clamp(460px, 60vh, 720px); }
+  /* Más solicitados: la ilustración un poco más a la derecha y hacia arriba */
+  #mas-solicitados .requested-art { top: -14px !important; left: calc(-1 * clamp(24px, 4vw, 80px)) !important; }
 }
 @media (max-width: 759px) {
   .lp-sec {
@@ -445,12 +479,51 @@ a:hover {
   .lp-sec > * { width: 100%; box-sizing: border-box; }
   #ofertas.lp-sec { justify-content: flex-start; }
   .lp-hero { min-height: 0 !important; }
+
+  /* Ofertas: el contenido llena el alto y se reparte; más aire arriba (título + carrito) */
+  #ofertas.lp-sec { padding-top: 0 !important; }
+  #ofertas .offers-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 24px;
+    padding-top: var(--sec-top-mobile);
+    padding-bottom: clamp(16px, 4vh, 36px);
+  }
+  /* los hijos ocupan todo el ancho: mantienen la alineación a la izquierda (no se centran) */
+  #ofertas .offers-body > * { width: 100%; box-sizing: border-box; }
+  /* el título queda arriba y, mucho más abajo, el subtítulo con el marker + chip ciudad debajo */
+  #ofertas .offers-head { gap: 8px; }
+  #ofertas .offers-head > p { margin-top: clamp(24px, 8vh, 80px) !important; }
+
+  /* Catálogo: mismo aire superior que el título de Ofertas */
+  #explorar.lp-sec { padding-top: var(--sec-top-mobile) !important; }
+
+  /* Más solicitados: título + imagen + "ver todos" con el mismo aire arriba;
+     el subtítulo + ubicación bajan (sin pegarse al título) y las cards vuelven a su tamaño */
+  #mas-solicitados.lp-sec { padding-top: 0 !important; }
+  #mas-solicitados .requested-art { top: clamp(0px, 1.5vh, 18px) !important; left: calc(-1 * clamp(36px, 5vw, 88px)) !important; }
+  #mas-solicitados .requested-body {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: space-between;
+    gap: 24px;
+    padding-top: var(--sec-top-mobile);
+    padding-bottom: clamp(16px, 4vh, 36px);
+  }
+  #mas-solicitados .requested-body > * { width: 100%; box-sizing: border-box; }
+  #mas-solicitados .requested-head { gap: 8px; }
+  #mas-solicitados .requested-head > p { margin-top: clamp(24px, 8vh, 80px) !important; }
 }
 
 /* ───────── Mapa: responsive del kit ───────── */
 @media (max-width: 599px) {
   :root { --mp-pad: 12px; --mp-gap: 10px; }
-  .mp-logo { height: 32px !important; }
+  .mp-back svg { width: 24px !important; height: 24px !important; }
   .mp-title { font-size: 28px !important; }
 }
 .mapboxgl-map { font-family: var(--font-body); background: #0b0b12; }
@@ -465,7 +538,8 @@ a:hover {
     inset: 0 !important;
     z-index: 1100 !important;
     max-height: none !important;
-    padding: 12px 8px 24px;
+    /* padding extra a los costados/arriba = colchón para que el glow de las cards no se recorte */
+    padding: 24px 20px 28px;
     background: rgba(7, 7, 13, 0.92);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
@@ -492,6 +566,8 @@ a:hover {
     bottom: 24px !important;
     width: min(420px, calc(100% - min(480px, 44vw) - 100px));
     max-height: calc(100% - var(--mp-top, 240px) - 36px) !important;
+    /* colchón para que el glow de las cards no lo recorte el overflow del contenedor */
+    padding: 22px 18px;
   }
 }
 

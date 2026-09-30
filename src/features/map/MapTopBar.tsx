@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CategoryChip } from '../../components/ui/CategoryChip'
+import { Icon } from '../../components/ui/Icon'
 import { useHScroll } from '../../components/ui/useHScroll'
 import { TypeSelector } from '../../components/ui/TypeSelector'
 import { CATEGORIES, CATEGORIES_BY_TYPE } from '../../data/businesses'
@@ -51,8 +52,10 @@ export function MapTopBar({ present, type, setType, cat, setCat, picked, onPick 
   return (
     <div ref={ref} style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 500, padding: 'var(--mp-pad,24px) 12px 0', display: 'flex', flexDirection: 'column', gap: 'var(--mp-gap,14px)', background: 'linear-gradient(180deg,rgba(7,7,13,.94) 0%,rgba(7,7,13,.7) 75%,rgba(7,7,13,0) 100%)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <Link to="/" aria-label="Inicio" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', flex: 'none' }}>
-          <img className="mp-logo" src="/assets/logo/basket-mark.png" alt="" style={{ height: 48, display: 'block' }} />
+        <Link to="/" aria-label="Volver al inicio" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flex: 'none' }}>
+          <span className="mp-back" style={{ display: 'inline-flex', flex: 'none', filter: 'drop-shadow(0 0 4px rgba(255,255,255,.6))' }}>
+            <Icon name="chevron-left" size={28} color="#fff" />
+          </span>
           <span className="mp-title" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(34px,4vw,48px)', lineHeight: 1, letterSpacing: 'var(--ls-display)', color: '#fff', textShadow: 'var(--neon-text-soft)', whiteSpace: 'nowrap' }}>MAPA VIRTUAL</span>
         </Link>
       </div>
