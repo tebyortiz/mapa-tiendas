@@ -10,6 +10,8 @@ export interface WordmarkProps {
   markStyle?: CSSProperties
   /** Prende el parpadeo neón (encendido + letras que titilan), como en el hero */
   animated?: boolean
+  /** Texto alternativo al wordmark (p. ej. "MAPA VIRTUAL" en el navbar del mapa) */
+  text?: string
 }
 
 // [duración, delay] de las letras que parpadean, igual que en el hero
@@ -31,12 +33,14 @@ function FlickerWord({ text, table }: { text: string; table: Record<number, [num
   )
 }
 
-export function Wordmark({ size = 32, withMark = true, stacked, markSrc = '/assets/logo/basket-mark.png', style, markStyle, animated }: WordmarkProps) {
+export function Wordmark({ size = 32, withMark = true, stacked, markSrc = '/assets/logo/basket-mark.png', style, markStyle, animated, text }: WordmarkProps) {
   return (
-    <div style={{ display: 'inline-flex', alignItems: 'center', gap: size * 0.3, ...style }} aria-label="Comprá Fácil">
+    <div style={{ display: 'inline-flex', alignItems: 'center', gap: size * 0.3, ...style }} aria-label={text ?? 'Comprá Fácil'}>
       {withMark && <img src={markSrc} alt="" style={{ height: size * (stacked ? 2.1 : 1.35), width: 'auto', ...markStyle }} />}
       <span className={animated ? 'cf-neon cf-neon-on' : 'cf-neon'} style={{ fontSize: size, lineHeight: 1, whiteSpace: stacked ? 'normal' : 'nowrap' }}>
-        {animated ? (
+        {text ? (
+          text
+        ) : animated ? (
           stacked ? (
             <>
               <FlickerWord text="COMPRÁ" table={FLICKER_COMPRA} />

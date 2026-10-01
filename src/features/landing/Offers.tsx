@@ -16,14 +16,15 @@ function OfferCard({ o, businesses, onMore }: { o: Offer; businesses: Business[]
   const biz = businesses.find((b) => b.id === o.businessId)
   return (
     <article {...bind} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* Círculo + nombre de la sucursal: ahora va arriba de la imagen */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 2px' }}>
+        <ImageSlot src={o.storeImage} shape="circle" placeholder="Foto" style={{ width: 44, height: 44, flex: 'none', boxShadow: 'inset 0 0 0 1px var(--border-strong)', borderRadius: '50%' }} />
+        <span style={{ font: '800 15px/1.2 var(--font-body)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-strong)' }}>{o.store}</span>
+      </div>
       <div style={{ position: 'relative', aspectRatio: '2.15 / 1', borderRadius: 'var(--radius-panel)', overflow: 'hidden', background: 'var(--surface)', boxShadow: h ? `var(--glow-${o.type})` : 'inset 0 0 0 1px var(--border)', transition: 'box-shadow var(--dur-slow) var(--ease-out)' }}>
         <ImageSlot src={o.image} placeholder="Imagen de la oferta" style={{ position: 'absolute', inset: 0 }} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, padding: '0 2px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-          <ImageSlot src={o.storeImage} shape="circle" placeholder="Foto" style={{ width: 44, height: 44, flex: 'none', boxShadow: 'inset 0 0 0 1px var(--border-strong)', borderRadius: '50%' }} />
-          <span style={{ font: '800 15px/1.2 var(--font-body)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-strong)' }}>{o.store}</span>
-        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <TypeAvatar type={o.type} category={biz?.category} size={44} />
           <h3 style={{ margin: 0, font: '800 clamp(18px,1.8vw,24px)/1.2 var(--font-body)', textTransform: 'uppercase', color: OFFER_C[o.type] }}>{o.title}</h3>
@@ -38,12 +39,15 @@ function OfferCard({ o, businesses, onMore }: { o: Offer; businesses: Business[]
 
 function OfferMore({ onOpenMap }: { onOpenMap: OpenMap }) {
   return (
-    <div style={{ position: 'relative', boxSizing: 'border-box', aspectRatio: '2.15 / 1', borderRadius: 'var(--radius-panel)', overflow: 'hidden', background: 'var(--surface)', boxShadow: 'inset 0 0 0 1px var(--border-strong)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 20, textAlign: 'center' }}>
-      <GlowBackdrop palette="rainbow" intensity={0.35} parallax={false} />
-      <div className="cf-neon cf-neon-on" style={{ position: 'relative', fontSize: 'clamp(20px,2.2vw,30px)', lineHeight: 1.15 }}>
-        DESCUBRÍ MÁS OFERTAS<br />EN TU ZONA
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div aria-hidden="true" style={{ height: 44 }} />
+      <div style={{ position: 'relative', boxSizing: 'border-box', aspectRatio: '2.15 / 1', borderRadius: 'var(--radius-panel)', overflow: 'hidden', background: 'var(--surface)', boxShadow: 'inset 0 0 0 1px var(--border-strong)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, padding: 20, textAlign: 'center' }}>
+        <GlowBackdrop palette="rainbow" intensity={0.35} parallax={false} />
+        <div className="cf-neon cf-neon-on" style={{ position: 'relative', fontSize: 'clamp(20px,2.2vw,30px)', lineHeight: 1.15 }}>
+          DESCUBRÍ MÁS OFERTAS<br />EN TU ZONA
+        </div>
+        <Button iconRight="arrow-right" onClick={() => onOpenMap()} style={{ position: 'relative', color: '#fff' }}>ver ofertas</Button>
       </div>
-      <Button iconRight="arrow-right" onClick={() => onOpenMap()} style={{ position: 'relative', color: '#fff' }}>ver ofertas</Button>
     </div>
   )
 }

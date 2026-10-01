@@ -40,13 +40,22 @@ function NearbyStoreCard({ b, onClick }: { b: Business; onClick: () => void }) {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, font: '500 13px var(--font-body)', color: 'var(--text-muted)', minWidth: 0 }}>
           <Icon name="map-pin" size={14} />
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.address}</span>
+          <span className="nearby-addr" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.address}</span>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 'auto', paddingTop: 8 }}>
           <Badge status={b.open ? 'abierto' : 'cerrado'}>{b.open ? 'Abierto' : 'Cerrado'}</Badge>
           <Badge icon="map-pin">{b.distance}</Badge>
           {b.hasOffers && <Badge type="todas" variant="solid" icon="badge-percent">Ofertas</Badge>}
         </div>
+        {b.delivery && b.delivery.length > 0 && (
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {b.delivery.map((d) => (
+              <Badge key={d} type="tienda" icon={d === 'mostrador' ? 'store' : 'package'}>
+                {d === 'mostrador' ? 'En mostrador' : 'Con delivery'}
+              </Badge>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -56,11 +65,11 @@ export function LandingNearby({ onOpenMap, geo }: { onOpenMap: OpenMap; geo: Ret
   const trackRef = useHScroll<HTMLDivElement>()
   const list = (geo.nearby?.businesses ?? BUSINESSES).filter((b) => b.type === 'tienda')
   return (
-    <section className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '56px 0 72px', background: 'linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.01))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)' }}>
+    <section id="cerca" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '56px 0 72px', background: 'linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.01))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)' }}>
       <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(40% 55% at 8% 100%,rgba(250,110,78,.2),transparent 70%),radial-gradient(38% 50% at 92% 95%,rgba(164,116,245,.22),transparent 70%),radial-gradient(45% 40% at 55% 0%,rgba(79,169,238,.14),transparent 70%)' }} />
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 'var(--container)', margin: '0 auto', padding: '0 var(--gutter)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <NeonHeading as="h2" type="tienda">CERCA TUYO</NeonHeading>
-        <Button variant="ghost" size="sm" iconRight="arrow-right" onClick={() => onOpenMap('tienda')}>Ver todo en el mapa</Button>
+        <Button variant="ghost" size="sm" iconRight="arrow-right" onClick={() => onOpenMap('tienda')} style={{ transform: 'translateY(-5px)' }}>Ver todo en el mapa</Button>
       </div>
       <div ref={trackRef} className="nearby-track" style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 16, overflowX: 'auto', overflowY: 'hidden', padding: '24px var(--gutter) 20px', scrollSnapType: 'x mandatory', scrollPaddingLeft: 'var(--gutter)', scrollbarWidth: 'none', maxWidth: 'var(--container)', margin: '0 auto' }}>
         {list.map((b, i) => (

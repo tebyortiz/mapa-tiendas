@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { CategoryChip } from '../../components/ui/CategoryChip'
-import { Icon } from '../../components/ui/Icon'
 import { useHScroll } from '../../components/ui/useHScroll'
 import { TypeSelector } from '../../components/ui/TypeSelector'
 import { CATEGORIES, CATEGORIES_BY_TYPE } from '../../data/businesses'
@@ -51,19 +49,12 @@ export function MapTopBar({ present, type, setType, cat, setCat, picked, onPick 
   )
   return (
     <div ref={ref} style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 500, padding: 'var(--mp-pad,24px) 12px 0', display: 'flex', flexDirection: 'column', gap: 'var(--mp-gap,14px)', background: 'linear-gradient(180deg,rgba(7,7,13,.94) 0%,rgba(7,7,13,.7) 75%,rgba(7,7,13,0) 100%)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <Link to="/" aria-label="Volver al inicio" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', flex: 'none' }}>
-          <span className="mp-back" style={{ display: 'inline-flex', flex: 'none', filter: 'drop-shadow(0 0 4px rgba(255,255,255,.6))' }}>
-            <Icon name="chevron-left" size={28} color="#fff" />
-          </span>
-          <span className="mp-title" style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(34px,4vw,48px)', lineHeight: 1, letterSpacing: 'var(--ls-display)', color: '#fff', textShadow: 'var(--neon-text-soft)', whiteSpace: 'nowrap' }}>MAPA VIRTUAL</span>
-        </Link>
-      </div>
+      {/* El título "Mapa Virtual" y el back viven ahora en el navbar; acá arranca directo con los filtros. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'nowrap', minWidth: 0 }}>
         <span style={{ flex: 'none', font: '800 12px var(--font-body)', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>Filtros</span>
         <TypeSelector value={picked ? type : null} onChange={(t) => { setType(t); setCat('todas'); onPick() }} dense={dense} style={dense ? { flex: 1 } : undefined} />
         {wide && picked && (
-          <div ref={scrollRef} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none', padding: '32px 8px', margin: '-32px -8px' }}>
+          <div ref={scrollRef} style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0, overflowX: 'auto', overflowY: 'hidden', scrollbarWidth: 'none', padding: '32px 24px', margin: '-32px -8px' }}>
             <div style={{ display: 'flex', gap: 8 }}>{chips}</div>
           </div>
         )}

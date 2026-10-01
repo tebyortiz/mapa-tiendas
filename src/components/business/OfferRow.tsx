@@ -1,8 +1,12 @@
 import type { BusinessType, Deal } from '../../data/types'
+import { useEdgeFade } from '../../lib/useEdgeFade'
 import { Badge } from '../ui/Badge'
 import { Icon } from '../ui/Icon'
 
 export function OfferRow({ d, type, category, url }: { d: Deal; type: BusinessType; category: string; url?: string }) {
+  // Difuminado derecho angosto: pista de que hay más productos para deslizar; al llegar al
+  // final desaparece, así el botón "Ver oferta" y su glow se ven completos.
+  const fade = useEdgeFade<HTMLDivElement>({ axis: 'x', start: 0, end: 16 })
   const rgb = { tienda: '255,111,97', servicio: '61,139,255', emprendimiento: '155,107,255' }[type]
   const seeOfferStyle = {
     width: 60, height: 60, flex: 'none' as const, borderRadius: 12, display: 'flex', flexDirection: 'column' as const,
@@ -32,7 +36,7 @@ export function OfferRow({ d, type, category, url }: { d: Deal; type: BusinessTy
         </div>
       </div>
       {d.products.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', padding: '16px 12px', margin: '-16px -12px' }}>
+        <div ref={fade.ref} style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', padding: '16px 16px 16px 0', margin: '-16px -10px -16px 0', ...fade.style }}>
           {d.products.slice(0, 5).map((p, i) => (
             <div key={i} title={p.name} style={{ position: 'relative', width: 60, height: 60, flex: 'none', borderRadius: 12, background: p.image ? `url(${p.image}) center/cover` : 'rgba(255,255,255,.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 0 1px var(--border-strong)' }}>
               {!p.image && <Icon category={category} size={20} color="var(--text-subtle)" />}

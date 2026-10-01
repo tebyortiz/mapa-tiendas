@@ -45,7 +45,7 @@ export function BusinessSheet({ type = 'tienda', name, chain, branch, chainImage
         {!image && <Icon category={category} size={48} color={t.a} />}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(18,18,28,0) 45%,var(--surface) 100%)' }} />
       </div>
-      {onClose && <IconButton icon="x" label="Cerrar" variant="glass" size={40} onClick={onClose} style={{ position: 'absolute', top: 12, right: 12 }} />}
+      {onClose && <IconButton icon="x" label="Cerrar" variant="glass" size={40} onClick={onClose} style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(18,18,28,.72)', color: '#fff', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.22)' }} />}
       <div style={{ padding: '4px 20px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           <Badge type={type} variant="solid">{LBL[type]}</Badge>

@@ -242,6 +242,11 @@ html {
   color-scheme: dark;
   overflow-x: clip; /* la escena kenney del hero se sale intencionalmente del viewport (mobile y desktop); clip (no hidden) evita que body se convierta en scroll container y rompa el sticky del nav */
   -webkit-tap-highlight-color: transparent; /* evita el recuadro celeste de WebKit al tocar en mobile */
+  /* Al saltar a un ancla (#hero, #tiendas, …) se descuenta el alto del navbar sticky, así la sección no queda tapada; en el hero el salto cae en el tope real. */
+  scroll-padding-top: 96px;
+}
+@media (max-width: 899px) {
+  html { scroll-padding-top: 72px; }
 }
 body {
   margin: 0;
@@ -313,6 +318,8 @@ a:hover {
 .nav-lbl { display: none; }
 .nav-lbl-wrap { position: absolute !important; left: 50%; bottom: 6px; width: 22px; margin-left: -11px; }
 .nav-search { display: none; }
+/* Back del mapa (chevron al inicio): visible solo en desktop, igual que los links */
+.nav-back { display: inline-flex; }
 .offer-track { grid-auto-columns: 86%; }
 .offer-track::-webkit-scrollbar,
 .nearby-track::-webkit-scrollbar { display: none; }
@@ -341,6 +348,10 @@ a:hover {
 }
 @media (max-width: 899px) {
   .nav-brand .cf-neon { display: none; }
+  /* En el mapa la marca "MAPA VIRTUAL" sí se muestra junto a la canasta en mobile, con peso parecido al ícono del menú */
+  .nav-brand-map .cf-neon { display: inline !important; font-size: clamp(27px, 8vw, 34px) !important; position: relative; top: 4px; }
+  /* El back vive solo en desktop; en mobile la navegación va por el menú hamburguesa */
+  .nav-back { display: none !important; }
   .nav-burger { display: inline-flex; }
   .nav-brand img { height: 42px !important; }
   .nav-lbl-wrap { bottom: 11px; }
@@ -373,6 +384,8 @@ a:hover {
   .lp-nav-landing .lp-links { position: absolute; left: 50%; transform: translateX(-50%); }
   .nav-brand img { height: 40px !important; }
   .nav-brand .cf-neon { font-size: 28px !important; position: relative; top: 3px; }
+  /* En el mapa el rótulo se centra al eje real de la barra, para quedar alineado con el chevron, Ofertas y el buscador */
+  .nav-brand-map .cf-neon { top: 0 !important; }
   .nav-search { flex: none; width: clamp(300px, 28vw, 460px); }
   .nav-burger { display: none !important; }
 }
@@ -457,6 +470,9 @@ a:hover {
   /* Ofertas / Más solicitados: el título queda donde está y el subtítulo + ubicación bajan */
   .offers-head > p,
   .requested-head > p { margin-top: clamp(20px, 4vh, 56px) !important; }
+  /* Más aire entre la fila (marker + chip ciudad) y la fila de cards */
+  #ofertas .offer-track,
+  #mas-solicitados .offer-track { padding-top: clamp(44px, 6vh, 80px); }
   /* Ofertas: la ilustración con movimiento (carrito) se ve mucho más grande */
   .offers-art { width: clamp(240px, 22vw, 420px) !important; }
   .offers-head { padding-right: calc(clamp(240px, 22vw, 420px) + 2 * var(--gutter)) !important; }
@@ -465,6 +481,8 @@ a:hover {
   .lp-cards { --catalog-card-h: clamp(460px, 60vh, 720px); }
   /* Más solicitados: la ilustración un poco más a la derecha y hacia arriba */
   #mas-solicitados .requested-art { top: -14px !important; left: calc(-1 * clamp(24px, 4vw, 80px)) !important; }
+  /* Cerca tuyo: la dirección reserva siempre el alto de 2 líneas (ocupe 1 o 2) */
+  .nearby-addr { white-space: normal !important; display: -webkit-box !important; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.3; min-height: 2.6em; }
 }
 @media (max-width: 759px) {
   .lp-sec {
@@ -496,10 +514,10 @@ a:hover {
   #ofertas .offers-body > * { width: 100%; box-sizing: border-box; }
   /* el título queda arriba y, mucho más abajo, el subtítulo con el marker + chip ciudad debajo */
   #ofertas .offers-head { gap: 8px; }
-  #ofertas .offers-head > p { margin-top: clamp(24px, 8vh, 80px) !important; }
+  #ofertas .offers-head > p { margin-top: clamp(4px, 1.2vh, 10px) !important; }
 
-  /* Catálogo: mismo aire superior que el título de Ofertas */
-  #explorar.lp-sec { padding-top: var(--sec-top-mobile) !important; }
+  /* Catálogo: menos aire arriba del mapa + título (quedaba demasiado despegado del borde) */
+  #explorar.lp-sec { padding-top: clamp(16px, 3.5vh, 36px) !important; }
 
   /* Más solicitados: título + imagen + "ver todos" con el mismo aire arriba;
      el subtítulo + ubicación bajan (sin pegarse al título) y las cards vuelven a su tamaño */
@@ -517,7 +535,11 @@ a:hover {
   }
   #mas-solicitados .requested-body > * { width: 100%; box-sizing: border-box; }
   #mas-solicitados .requested-head { gap: 8px; }
-  #mas-solicitados .requested-head > p { margin-top: clamp(24px, 8vh, 80px) !important; }
+  #mas-solicitados .requested-head > p { margin-top: clamp(4px, 1.2vh, 10px) !important; }
+
+  /* Cerca tuyo: no forzar el alto de pantalla (evita el espacio muerto bajo las cards) y
+     separar el título del borde superior, como en las demás minisecciones */
+  #cerca.lp-sec { min-height: 0; padding-top: var(--sec-top-mobile) !important; }
 }
 
 /* ───────── Mapa: responsive del kit ───────── */
