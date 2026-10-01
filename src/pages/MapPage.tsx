@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { MapRef } from 'react-map-gl/mapbox'
 import { BusinessSheet } from '../components/business/BusinessSheet'
@@ -8,9 +8,9 @@ import type { Business, CategoryKey, TypeKey } from '../data/types'
 import { LandingNav } from '../features/landing/Nav'
 import { MapView } from '../features/map/MapView'
 import { MAP_CENTER } from '../lib/mapbox'
-import { fetchNearby, fmtDistance, metersBetween, toBusiness } from '../lib/geoApi'
+import { fmtDistance, metersBetween } from '../lib/geoApi'
 import { loadNearby, locateAndFetch } from '../lib/nearbyStore'
-import type { Nearby } from '../lib/nearbyStore'
+import { useEdgeFade } from '../lib/useEdgeFade'
 import { LocationModal } from '../features/map/LocationModal'
 import { MapControls } from '../features/map/MapControls'
 import { MapTopBar } from '../features/map/MapTopBar'
@@ -34,20 +34,12 @@ export default function MapPage() {
   const [toast, setToast] = useState<string | null>(null)
   const mapRef = useRef<MapRef | null>(null)
   const cached = useState(loadNearby)[0]
+  // Si todavía no hay ubicación, al entrar al mapa se muestra el modal que pide el permiso.
   const [askLoc, setAskLoc] = useState(!cached)
   const [locLoading, setLocLoading] = useState(false)
   const [locError, setLocError] = useState<string | null>(null)
   const [apiBiz, setApiBiz] = useState<Business[] | null>(cached?.businesses ?? null)
   const [userPos, setUserPos] = useState<{ lat: number; lng: number }>(cached?.pos ?? MAP_CENTER)
-  // Modo Tunuyán: se ve el mapa desde el centro de la ciudad; al apagarlo se vuelve a la ubicación detectada por el navegador
-  const [tunuyan, setTunuyan] = useState(false)
-  const [tunuyanLoading, setTunuyanLoading] = useState(false)
-  const realNearby = useRef<Nearby | null>(cached)
-
-  const flash = (msg: string) => {
-    setToast(msg)
-    setTimeout(() => setToast(null), 2600)
-  }
 
   // Con datos del backend (solo tiendas) se suman los servicios y emprendimientos de ejemplo, con la distancia desde el usuario.
   const businesses = useMemo(
@@ -60,8 +52,6 @@ export default function MapPage() {
     setLocError(null)
     try {
       const n = await locateAndFetch()
-      realNearby.current = n
-      setTunuyan(false)
       setApiBiz(n.businesses)
       setUserPos(n.pos)
       setSel(null)
@@ -70,10 +60,26 @@ export default function MapPage() {
     } catch (e) {
       console.error('[geo] error', e)
       setLocError(e instanceof GeolocationPositionError ? 'No pudimos obtener tu ubicación. Revisá los permisos del navegador.' : 'No pudimos cargar los comercios cercanos. Probá de nuevo.')
+      setAskLoc(true)
     } finally {
       setLocLoading(false)
     }
   }
+
+  // Revalidación en segundo plano: vuelve a hacer el POST para traer sucursales recién
+  // creadas, sin bloquear la UI ni volver a pedir permiso. Solo corre si la ubicación ya
+  // está concedida, así nunca reaparece el prompt del navegador.
+  const refresh = useCallback(async () => {
+    const perm = await navigator.permissions?.query({ name: 'geolocation' }).catch(() => null)
+    if (perm && perm.state !== 'granted') return
+    try {
+      const n = await locateAndFetch()
+      setApiBiz(n.businesses)
+      setUserPos(n.pos)
+    } catch (e) {
+      console.error('[geo] refresh error', e)
+    }
+  }, [])
 
   useEffect(() => {
     const f = () => {
@@ -84,47 +90,33 @@ export default function MapPage() {
     return () => mq.removeEventListener('change', f)
   }, [])
 
+  // Al entrar al mapa: si ya había datos cacheados se muestran al instante y se revalidan
+  // en segundo plano para reflejar lo nuevo; si todavía no hay ubicación, el modal pide el permiso.
+  useEffect(() => {
+    if (cached) void refresh()
+  }, [cached, refresh])
+
+  // Al volver a la pestaña del mapa se revalida: así aparecen las sucursales que el usuario
+  // haya creado en otra pestaña (dashboards de gesto / tu tienda virtual) mientras estaba fuera.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void refresh()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [refresh])
+
   const items = businesses.filter(
     (b) => (type === 'todas' || b.type === type) && (cat === 'todas' || b.category === cat) && (!query || synonyms(query).some((w) => b.search.includes(w))),
   )
   // Categorías con sucursales cercanas dentro del tipo elegido: sus chips van primero
   const present = useMemo(() => new Set(businesses.filter((b) => type === 'todas' || b.type === type).map((b) => b.category)), [businesses, type])
   const s = businesses.find((b) => b.id === sel)
+  // Difuminado dentro del sheet: arriba de la card y abajo de las ofertas, como pista de scroll.
+  const sheetFade = useEdgeFade<HTMLDivElement>({ axis: 'y', start: 14, end: 24 })
   const pick = (id: number) => {
     setSel(id)
     if (!desk) setExp(false)
-  }
-  const toggleTunuyan = async () => {
-    setTunuyanLoading(true)
-    try {
-      if (!tunuyan) {
-        const results = await fetchNearby(MAP_CENTER.lat, MAP_CENTER.lng)
-        console.log('[tunuyan] comercios recibidos:', results.length)
-        setApiBiz(results.map(toBusiness))
-        setUserPos(MAP_CENTER)
-        setTunuyan(true)
-        // Los comercios del backend son de tipo "tienda": si había un filtro activo quedarían ocultos, así que se resetea para mostrarlos.
-        setType('todas')
-        setCat('todas')
-        setPicked(false)
-        flash('Viendo Tunuyán')
-      } else {
-        const n = realNearby.current ?? (await locateAndFetch())
-        realNearby.current = n
-        setApiBiz(n.businesses)
-        setUserPos(n.pos)
-        setTunuyan(false)
-        flash('Volviste a tu ubicación')
-      }
-      setSel(null)
-      const c = !tunuyan ? MAP_CENTER : (realNearby.current?.pos ?? MAP_CENTER)
-      mapRef.current?.flyTo({ center: [c.lng, c.lat], zoom: 15 })
-    } catch (e) {
-      console.error('[geo] error', e)
-      flash(tunuyan ? 'No pudimos obtener tu ubicación' : 'No pudimos cargar Tunuyán')
-    } finally {
-      setTunuyanLoading(false)
-    }
   }
   const locate = () => {
     mapRef.current?.flyTo({ center: [userPos.lng, userPos.lat], zoom: 15 })
@@ -138,7 +130,7 @@ export default function MapPage() {
       <div data-type={type === 'todas' ? undefined : type} style={{ position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         <MapView items={items} selectedId={sel} onSelect={pick} mapRef={mapRef} userPos={userPos} />
         <MapTopBar present={present} type={type} setType={setType} cat={cat} setCat={setCat} picked={picked} onPick={() => setPicked(true)} />
-        <MapControls onZoomIn={() => mapRef.current?.zoomIn()} onZoomOut={() => mapRef.current?.zoomOut()} onLocate={locate} tunuyan={tunuyan} tunuyanLoading={tunuyanLoading} onToggleTunuyan={toggleTunuyan} />
+        <MapControls onZoomIn={() => mapRef.current?.zoomIn()} onZoomOut={() => mapRef.current?.zoomOut()} onLocate={locate} />
         <ResultsPanel items={items} selectedId={sel} onSelect={pick} expanded={exp} setExpanded={setExp} type={type} desk={desk} />
         {toast && (
           <div style={{ position: 'absolute', zIndex: 700, left: 0, right: 0, top: 'calc(var(--mp-top,240px) + 8px)', display: 'flex', justifyContent: 'center' }}>
@@ -147,7 +139,7 @@ export default function MapPage() {
         )}
         {askLoc && <LocationModal loading={locLoading} error={locError} onAllow={allowLocation} onSkip={() => setAskLoc(false)} />}
         {s && (
-          <div key={s.id} className="mp-sheet" style={{ position: 'absolute', zIndex: 650, left: 8, right: 8, bottom: 8, maxHeight: '78%', overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, animation: 'cf-rise var(--dur-slow) var(--ease-out)' }}>
+          <div key={s.id} ref={sheetFade.ref} className="mp-sheet" style={{ position: 'absolute', zIndex: 650, left: 8, right: 8, bottom: 8, maxHeight: '78%', overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, animation: 'cf-rise var(--dur-slow) var(--ease-out)', ...sheetFade.style }}>
             <BusinessSheet
               type={s.type} name={s.name} chain={s.chain} branch={s.branch} chainImage={s.chainImage} category={s.category}
               categoryLabel={s.categoryLabel} image={s.image} description={s.description} address={s.address} hours={s.hours} delivery={s.delivery}

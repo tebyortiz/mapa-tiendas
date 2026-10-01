@@ -1,5 +1,6 @@
 import type { Business, CategoryKey, Deal, DeliveryMode } from '../data/types'
 import { CATEGORIES } from '../data/businesses'
+import { isOpenApi } from './hours'
 
 // La API solo acepta POST con body JSON y no envía cabeceras CORS: en dev se
 // atiende con el proxy de vite.config.ts y en producción con el rewrite de vercel.json.
@@ -140,7 +141,7 @@ export function toBusiness(r: ApiResult, i: number): Business {
     category,
     categoryLabel,
     distance: fmtDistance(r.distance),
-    open: r.status,
+    open: isOpenApi(r.hours) ?? r.status,
     lat,
     lng,
     address,

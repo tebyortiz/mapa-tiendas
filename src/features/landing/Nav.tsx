@@ -167,7 +167,10 @@ export interface LandingNavProps {
 }
 
 export function LandingNav({ onOpenMap, base = '', sticky = true, cta = true, search }: LandingNavProps) {
-  const brand = <Wordmark size={18} />
+  // En el mapa (cta=false) la marca pasa a ser "MAPA VIRTUAL" y aparece un back (chevron) a la izquierda.
+  const mapMode = !cta
+  // En el mapa: más aire entre la canasta y el texto (como en la landing, que se ve apretado junto al chevron).
+  const brand = <Wordmark size={18} text={mapMode ? 'MAPA VIRTUAL' : undefined} style={mapMode ? { gap: 10 } : undefined} />
   const [menu, setMenu] = useState(false)
   return (
     <header
@@ -180,10 +183,20 @@ export function LandingNav({ onOpenMap, base = '', sticky = true, cta = true, se
       />
       <div className={`lp-nav${cta ? ' lp-nav-landing' : ''}`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 76, padding: '14px var(--gutter)' }}>
         <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* En el mapa, el back al inicio: solo desktop (en mobile el acceso vive en el menú hamburguesa). */}
+          {mapMode && (
+            <Link to="/" className="nav-back" aria-label="Volver al inicio" title="Volver al inicio" style={{ width: 44, height: 44, flex: 'none', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+              <Icon name="chevron-left" size={28} color="#fff" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,.6))' }} />
+            </Link>
+          )}
+          {/* Ícono del menú en mobile: mismo tamaño en la landing y en el mapa */}
           <button type="button" className="nav-burger" aria-label="Abrir menú" onClick={() => setMenu(true)} style={{ width: 44, height: 44, flex: 'none', alignItems: 'center', justifyContent: 'center', padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }}>
-            <Icon name="list-sort-descending" size={30} color="#fff" style={{ filter: 'drop-shadow(0 0 3px #fff) drop-shadow(0 0 9px rgba(255,255,255,.8)) drop-shadow(0 0 18px rgba(255,255,255,.45))' }} />
+            <Icon name="list-sort-descending" size={38} color="#fff" style={{ filter: 'drop-shadow(0 0 3px #fff) drop-shadow(0 0 9px rgba(255,255,255,.8)) drop-shadow(0 0 18px rgba(255,255,255,.45))' }} />
           </button>
-          {base ? (
+          {mapMode ? (
+            // En el mapa la marca es solo rótulo: no debe navegar a ningún lado al hacer click.
+            <span className="nav-brand nav-brand-map" style={{ display: 'flex' }}>{brand}</span>
+          ) : base ? (
             <Link to={`${base}#hero`} className="nav-brand" style={{ display: 'flex', textDecoration: 'none' }}>{brand}</Link>
           ) : (
             <a href="#hero" className="nav-brand" style={{ display: 'flex', textDecoration: 'none' }}>{brand}</a>
@@ -197,19 +210,7 @@ export function LandingNav({ onOpenMap, base = '', sticky = true, cta = true, se
         </nav>
         <div className="nav-right" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           {search && !cta && <NavSearch query={search.query} onSearch={search.onSearch} />}
-          {/* En el mapa mobile no va el botón "Mapa"; el extremo derecho ofrece Ofertas (la categoría que no está en los filtros). */}
-          {!cta && (
-            <Link
-              to={`${base}#ofertas`}
-              className="nav-offers-m"
-              aria-label="Ver ofertas"
-              title="Ofertas"
-              style={{ height: 44, flex: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '0 16px', borderRadius: 'var(--radius-pill)', textDecoration: 'none', background: 'var(--rainbow-grad)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.25)', font: '800 14px var(--font-body)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)', whiteSpace: 'nowrap' }}
-            >
-              <Icon name="badge-percent" size={18} color="#fff" />
-              <span>Ofertas</span>
-            </Link>
-          )}
+          {/* En el mapa: desktop muestra Ofertas (en .lp-links) + buscador; mobile no lleva Ofertas. */}
           {cta && (
             <>
               {/* Ingresar: solo desktop (en mobile la cuenta vive en el menú lateral). Va antes de "Mapa". */}

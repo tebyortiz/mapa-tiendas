@@ -1,6 +1,7 @@
 import { BusinessCard } from '../../components/business/BusinessCard'
 import { Icon } from '../../components/ui/Icon'
 import type { Business, TypeKey } from '../../data/types'
+import { useEdgeFade } from '../../lib/useEdgeFade'
 
 interface ResultsPanelProps {
   items: Business[]
@@ -16,6 +17,8 @@ const LBL: Record<TypeKey, string> = { todas: 'lugares', tienda: 'tiendas', serv
 
 export function ResultsPanel({ items, selectedId, onSelect, expanded, setExpanded, type, desk }: ResultsPanelProps) {
   const chev = desk ? (expanded ? 'chevron-up' : 'chevron-down') : expanded ? 'chevron-down' : 'chevron-up'
+  // Difuminado inferior: aparece solo cuando quedan más sucursales para deslizar hacia abajo.
+  const fade = useEdgeFade<HTMLDivElement>({ axis: 'y', start: 0, end: 28 })
   return (
     <div
       className="mp-panel"
@@ -29,7 +32,7 @@ export function ResultsPanel({ items, selectedId, onSelect, expanded, setExpande
           <Icon name={chev} size={20} color="var(--text-muted)" />
         </span>
       </button>
-      <div className="mp-list" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '10px 14px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div ref={fade.ref} className="mp-list" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '10px 14px 16px', display: 'flex', flexDirection: 'column', gap: 10, ...fade.style }}>
         {items.map((b) => (
           <BusinessCard key={b.id} type={b.type} name={b.branch || b.name} category={b.category} categoryLabel={b.categoryLabel} distance={b.distance} open={b.open} address={b.address} image={b.image} hasOffers={b.hasOffers} selected={b.id === selectedId} onClick={() => onSelect(b.id)} style={{ flex: 'none' }} />
         ))}

@@ -23,7 +23,7 @@ export function SectionHead({ title, subtitle, type, city, action, onAction, cla
     <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 'var(--container)', margin: '0 auto', padding: '0 var(--gutter)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
         <NeonHeading as="h2" type={type}>{title}</NeonHeading>
-        {action && <Button variant="ghost" size="sm" iconRight="arrow-right" onClick={onAction}>{action}</Button>}
+        {action && <Button variant="ghost" size="sm" iconRight="arrow-right" onClick={onAction} style={{ transform: 'translateY(-5px)' }}>{action}</Button>}
       </div>
       <p style={{ margin: 0, font: '500 16px/1.55 var(--font-body)', color: 'var(--text-muted)', maxWidth: 560 }}>{subtitle}</p>
       {city && <div style={{ marginTop: 4 }}><LocationRow city={city} /></div>}
