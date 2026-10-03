@@ -75,7 +75,7 @@ function NavSearch({ query, onSearch }: { query: string; onSearch: (q: string) =
   }
   return (
     <form className="nav-search" onSubmit={submit} style={{ gap: 8, alignItems: 'center' }}>
-      <SearchInput glass value={draft} onChange={(v) => { setDraft(v); if (!v) onSearch('') }} placeholder="Buscar cerca tuyo…" style={{ flex: 1, minWidth: 0 }} />
+      <SearchInput glass rainbow value={draft} onChange={(v) => { setDraft(v); if (!v) onSearch('') }} placeholder="Buscar cerca tuyo…" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
       <Button htmlType="submit" type="todas" icon="search" style={{ height: 48, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>Buscar</Button>
     </form>
   )
@@ -115,7 +115,7 @@ function NavDrawer({ base, search, onClose }: { base: string; search?: LandingNa
             {fixedSpacer}
             <p style={introText}>¿Qué se te antoja hoy? Buscá y encontrá lo que necesitás, cerca tuyo.</p>
             <form onSubmit={submit} style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>
-              <SearchInput glass value={draft} onChange={(v) => { setDraft(v); if (!v) search.onSearch('') }} placeholder="Buscar cerca tuyo…" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
+              <SearchInput glass rainbow value={draft} onChange={(v) => { setDraft(v); if (!v) search.onSearch('') }} placeholder="Buscar cerca tuyo…" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
               <Button htmlType="submit" type="todas" icon="search" aria-label="Buscar" style={{ width: 48, padding: 0, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }} />
             </form>
             {fixedSpacer}

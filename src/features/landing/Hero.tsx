@@ -165,7 +165,7 @@ export function LandingHero({ onOpenMap, onSearch, city }: { onOpenMap: () => vo
         </p>
 
         <form className="hero-search" onSubmit={submit} style={{ order: 6, display: 'flex', gap: 8, alignItems: 'center', width: '100%', maxWidth: 560 }}>
-          <SearchInput value={q} onChange={setQ} placeholder="¿Qué buscás cerca tuyo?" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
+          <SearchInput rainbow value={q} onChange={setQ} placeholder="¿Qué buscás cerca tuyo?" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
           <Button htmlType="submit" icon="search" style={{ height: 48, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>Buscar</Button>
         </form>
       </div>

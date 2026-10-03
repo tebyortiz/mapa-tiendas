@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { ShopAssistant } from '../components/assistant/ShopAssistant'
 import { useNearby } from '../lib/nearbyStore'
 import { LandingCatalog } from '../features/landing/Catalog'
 import { LandingHero } from '../features/landing/Hero'
@@ -24,6 +25,7 @@ export default function LandingPage() {
       <LandingNearby onOpenMap={open} geo={geo} />
       <LandingJoin />
       <LandingFooter />
+      <ShopAssistant />
     </div>
   )
 }

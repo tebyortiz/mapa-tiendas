@@ -26,12 +26,14 @@ export interface SearchInputProps {
   placeholder?: string
   /** Vidrio oscuro translúcido para flotar sobre el mapa */
   glass?: boolean
+  /** Borde degradado multicolor + glow (mismo estilo que el botón flotante del asistente). */
+  rainbow?: boolean
   /** Si se pasa, el placeholder alterna entre la pregunta (placeholder) y estas búsquedas, tipeándose y borrándose. */
   suggestions?: string[]
   style?: CSSProperties
 }
 
-export function SearchInput({ value, defaultValue, onChange, placeholder = 'Buscar comercios, servicios…', onClear, glass, suggestions, style }: SearchInputProps) {
+export function SearchInput({ value, defaultValue, onChange, placeholder = 'Buscar comercios, servicios…', onClear, glass, rainbow, suggestions, style }: SearchInputProps) {
   const [f, setF] = useState(false)
   const [v, setV] = useState(defaultValue ?? '')
   const val = value ?? v
@@ -97,14 +99,25 @@ export function SearchInput({ value, defaultValue, onChange, placeholder = 'Busc
     }
   }, [phrases, animate, placeholder])
 
+  const surfaceVar = glass ? 'var(--surface-glass-dark)' : 'var(--surface)'
+  // Borde degradado multicolor (técnica padding-box/border-box) + glow arcoíris; se intensifica con foco/texto.
+  const rainbowStyle: CSSProperties = rainbow
+    ? {
+        border: '2px solid transparent', boxSizing: 'border-box',
+        background: `linear-gradient(${surfaceVar}, ${surfaceVar}) padding-box, var(--rainbow-grad) border-box`,
+        boxShadow: val || f ? 'var(--glow-rainbow), inset 0 0 0 1px rgba(255,255,255,.14)' : 'var(--glow-rainbow)',
+      }
+    : {
+        background: surfaceVar,
+        boxShadow: val ? 'inset 0 0 0 1px rgba(255,255,255,.9), 0 0 10px rgba(255,255,255,.45), 0 0 26px rgba(255,255,255,.22)' : f ? 'inset 0 0 0 1px rgba(255,255,255,.6), 0 0 14px rgba(255,255,255,.14)' : 'inset 0 0 0 1px var(--border-strong)',
+      }
+
   return (
     <label
       style={{
         display: 'flex', alignItems: 'center', gap: 4, height: 48, padding: '0 6px 0 16px', borderRadius: 'var(--radius-pill)',
-        background: glass ? 'var(--surface-glass-dark)' : 'var(--surface)',
         backdropFilter: glass ? 'blur(16px)' : undefined, WebkitBackdropFilter: glass ? 'blur(16px)' : undefined,
-        boxShadow: val ? 'inset 0 0 0 1px rgba(255,255,255,.9), 0 0 10px rgba(255,255,255,.45), 0 0 26px rgba(255,255,255,.22)' : f ? 'inset 0 0 0 1px rgba(255,255,255,.6), 0 0 14px rgba(255,255,255,.14)' : 'inset 0 0 0 1px var(--border-strong)',
-        transition: 'box-shadow var(--dur-base)', ...style,
+        transition: 'box-shadow var(--dur-base)', ...rainbowStyle, ...style,
       }}
     >
       <Icon name="search" size={18} color="var(--text-muted)" />

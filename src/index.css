@@ -212,6 +212,12 @@
   0%, 100% { box-shadow: 0 0 0 0 var(--pulse, rgba(255, 255, 255, 0.35)); }
   50% { box-shadow: 0 0 0 10px transparent; }
 }
+/* Sonar/radar: anillo que se expande y se desvanece (retícula "Explorar aquí") */
+@keyframes cf-ping {
+  0% { transform: scale(0.55); opacity: 0.55; }
+  70% { opacity: 0; }
+  100% { transform: scale(2.1); opacity: 0; }
+}
 @keyframes cf-float {
   0%, 100% { transform: translateY(0) rotate(-2deg); }
   50% { transform: translateY(-10px) rotate(2deg); }
@@ -236,11 +242,20 @@
   30% { opacity: 0.6; }
   38%, 100% { opacity: 1; }
 }
+@keyframes cf-spin { to { transform: rotate(360deg); } }
+/* El lanzador del asistente de compra (botón robot) flota sobre el mapa y la landing */
+.shop-fab { animation: cf-float 6s var(--ease-in-out) infinite; }
+.shop-pop { animation: cf-rise var(--dur-slow) var(--ease-out); }
+/* Posición del lanzador del asistente: en mobile se eleva para no tapar el botón "Buscar"
+   del hero; en desktop se corre a la izquierda para no superponerse a los controles del mapa. */
+.shop-dock { right: 16px; bottom: 72px; }
+@media (min-width: 900px) { .shop-dock { right: 76px; bottom: 16px; } }
 
 /* ───────── Base ───────── */
 html {
   color-scheme: dark;
   overflow-x: clip; /* la escena kenney del hero se sale intencionalmente del viewport (mobile y desktop); clip (no hidden) evita que body se convierta en scroll container y rompa el sticky del nav */
+  scrollbar-gutter: stable; /* reserva siempre el canal del scrollbar vertical: así los elementos fixed (p. ej. el FAB del asistente) no "saltan" entre la landing (con scroll) y el mapa (sin scroll) */
   -webkit-tap-highlight-color: transparent; /* evita el recuadro celeste de WebKit al tocar en mobile */
   /* Al saltar a un ancla (#hero, #tiendas, …) se descuenta el alto del navbar sticky, así la sección no queda tapada; en el hero el salto cae en el tope real. */
   scroll-padding-top: 96px;
@@ -593,9 +608,34 @@ a:hover {
   }
 }
 
+/* ───────── Ficha de resultado de producto (header fijo + lista scrolleable) ───────── */
+.prs-root { display: flex; flex-direction: column; min-height: 0; }
+.prs-scroll::-webkit-scrollbar { display: none; }
+
+/* Mobile: el header (datos de la tienda) y el footer (acciones) quedan fijos; solo la lista
+   de productos, debajo de la línea de "N productos encontrados", scrollea. */
+@media (max-width: 899px) {
+  .mp-sheet-product { overflow: hidden !important; }
+  .prs-root { height: 100%; }
+  .prs-head, .prs-foot { flex: none; }
+  .prs-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+}
+
+/* Desktop: la card entera scrollea dentro de su contenedor (con el difuminado de .mp-sheet-product),
+   su borde superior llega hasta la altura del banner de resultados y la lista no scrollea aparte. */
+@media (min-width: 900px) {
+  .mp-sheet-product {
+    top: 8px !important;
+    bottom: auto !important;
+    max-height: calc(100% - 32px) !important;
+  }
+  .prs-root { height: auto; }
+  .prs-scroll { overflow: visible; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root { --dur-drift: 0s; --stagger: 0ms; }
   .cf-neon-on { animation: none; }
   * { scroll-behavior: auto !important; }
-  .requested-art, .catalog-art, .offers-art, .hero-basket, .hero-basket-img, .hero-letter, .nav-tube-on, .nav-idle { animation: none !important; }
+  .requested-art, .catalog-art, .offers-art, .hero-basket, .hero-basket-img, .hero-letter, .nav-tube-on, .nav-idle, .shop-fab { animation: none !important; }
 }
