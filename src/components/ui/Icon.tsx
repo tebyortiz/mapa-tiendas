@@ -1,7 +1,7 @@
 import type { CSSProperties, ComponentType } from 'react'
 import {
   Apple, Beef, Candy, Croissant, Package, ShoppingBasket,
-  ArrowRight, BadgePercent, Bone, BriefcaseMedical, CalendarClock, Cake, CarFront, ChevronDown, ChevronLeft,
+  ArrowRight, BadgePercent, Bot, Bone, BriefcaseMedical, CalendarClock, Cake, CarFront, ChevronDown, ChevronLeft,
   ChevronRight, ChevronUp, Clock, ConciergeBell, Dog, Droplets, Footprints, Gamepad2, Gift, Globe, Hammer,
   HandPlatter, Headphones, KeyRound, LayoutGrid, ListSortDescending, LocateFixed, LogIn, Map, MapPin, MapPinned, MessageCircle, Minus,
   Navigation, Palette, Pizza, Plus, Scissors, Search, Shirt, ShoppingBag, Signpost, Smartphone, Sofa, Sparkles, Store,
@@ -19,6 +19,7 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
   'shopping-basket': ShoppingBasket,
   'arrow-right': ArrowRight,
   'badge-percent': BadgePercent,
+  bot: Bot,
   bone: Bone,
   'briefcase-medical': BriefcaseMedical,
   'calendar-clock': CalendarClock,

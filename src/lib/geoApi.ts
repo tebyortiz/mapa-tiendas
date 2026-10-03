@@ -1,3 +1,4 @@
+import type { Feature, Polygon } from 'geojson'
 import type { Business, CategoryKey, Deal, DeliveryMode } from '../data/types'
 import { CATEGORIES } from '../data/businesses'
 import { isOpenApi } from './hours'
@@ -6,7 +7,8 @@ import { isOpenApi } from './hours'
 // atiende con el proxy de vite.config.ts y en producción con el rewrite de vercel.json.
 const NEARBY_URL = '/api/geo/nearby'
 
-export const DEFAULT_RADIUS = 1500
+/** Radio de búsqueda por defecto, en metros (cercanos y búsqueda de productos). */
+export const DEFAULT_RADIUS = 5000
 
 export interface ApiOfferProduct {
   productId: string
@@ -170,4 +172,16 @@ export function metersBetween(a: { lat: number; lng: number }, b: { lat: number;
   const r = (d: number) => (d * Math.PI) / 180
   const h = Math.sin(r(b.lat - a.lat) / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lng - a.lng) / 2) ** 2
   return 2 * 6371000 * Math.asin(Math.sqrt(h))
+}
+
+/** Polígono (GeoJSON) que aproxima un círculo de radio en metros, para dibujar el área de búsqueda. */
+export function circlePolygon(center: { lat: number; lng: number }, radiusMeters: number, points = 72): Feature<Polygon> {
+  const dLat = radiusMeters / 111320 // metros por grado de latitud
+  const dLng = radiusMeters / (111320 * Math.cos((center.lat * Math.PI) / 180))
+  const ring: [number, number][] = []
+  for (let i = 0; i <= points; i++) {
+    const t = (i / points) * 2 * Math.PI
+    ring.push([center.lng + dLng * Math.cos(t), center.lat + dLat * Math.sin(t)])
+  }
+  return { type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] }, properties: {} }
 }
