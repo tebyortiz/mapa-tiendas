@@ -281,6 +281,44 @@
   38%, 100% { opacity: 1; }
 }
 @keyframes cf-spin { to { transform: rotate(360deg); } }
+
+/* Carrusel de fondos en las cards del catálogo: cada capa aparece y desaparece
+   con un crossfade suave; la rotación se maneja desde React (índice activo). */
+.catalog-slide { opacity: 0; transition: opacity var(--dur-enter) var(--ease-in-out); }
+.catalog-slide.is-active { opacity: 1; }
+
+/* Cinta "PRÓXIMAMENTE": banda amarilla inclinada con texto negro que se
+   desplaza de izquierda a derecha. */
+.catalog-ribbon {
+  position: absolute; left: -16%; right: -16%; top: 7%;
+  rotate: -9deg; overflow: hidden; z-index: 3; pointer-events: none;
+  background: var(--cf-rb-yellow);
+  box-shadow: 0 10px 28px rgba(0,0,0,.45), inset 0 0 0 2px rgba(0,0,0,.14);
+}
+.catalog-ribbon-track {
+  display: flex; width: max-content;
+  animation: cf-ribbon-scroll 14s linear infinite;
+}
+.catalog-ribbon-track span {
+  padding: 9px 26px; white-space: nowrap;
+  font: 800 clamp(15px,1.7vw,19px)/1 var(--font-display, var(--font-body));
+  letter-spacing: .14em; color: #0a0a0f; text-transform: uppercase;
+}
+@keyframes cf-ribbon-scroll { from { transform: translateX(-50%); } to { transform: translateX(0); } }
+
+/* Misma cinta amarilla, como banner de la sección "Más solicitados". */
+.requested-ribbon {
+  position: relative; margin: 32px auto 4px; max-width: var(--container);
+  rotate: -1.5deg; overflow: hidden; border-radius: 4px;
+  background: var(--cf-rb-yellow);
+  box-shadow: 0 10px 28px rgba(0,0,0,.4), inset 0 0 0 2px rgba(0,0,0,.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .catalog-slide { transition: none; }
+  .catalog-ribbon-track { animation: none; justify-content: center; width: 100%; }
+}
+
 /* El lanzador del asistente de compra (botón robot) flota sobre el mapa y la landing */
 .shop-fab { animation: cf-float 6s var(--ease-in-out) infinite; }
 .shop-pop { animation: cf-rise var(--dur-slow) var(--ease-out); }
@@ -371,8 +409,6 @@ a:hover {
 .nav-lbl { display: none; }
 .nav-lbl-wrap { position: absolute !important; left: 50%; bottom: 6px; width: 22px; margin-left: -11px; }
 .nav-search { display: none; }
-/* Back del mapa (chevron al inicio): visible solo en desktop, igual que los links */
-.nav-back { display: inline-flex; }
 .offer-track { grid-auto-columns: 86%; }
 .offer-track::-webkit-scrollbar,
 .nearby-track::-webkit-scrollbar { display: none; }
@@ -419,8 +455,6 @@ a:hover {
   .nav-brand .cf-neon { display: none; }
   /* En el mapa la marca "MAPA VIRTUAL" sí se muestra junto a la canasta en mobile, con peso parecido al ícono del menú */
   .nav-brand-map .cf-neon { display: inline !important; font-size: clamp(27px, 8vw, 34px) !important; position: relative; top: 4px; }
-  /* El back vive solo en desktop; en mobile la navegación va por el menú hamburguesa */
-  .nav-back { display: none !important; }
   .nav-burger { display: inline-flex; }
   .nav-brand img { height: 42px !important; }
   .nav-lbl-wrap { bottom: 11px; }
@@ -453,7 +487,7 @@ a:hover {
   .lp-nav-landing .lp-links { position: absolute; left: 50%; transform: translateX(-50%); }
   .nav-brand img { height: 40px !important; }
   .nav-brand .cf-neon { font-size: 28px !important; position: relative; top: 3px; }
-  /* En el mapa el rótulo se centra al eje real de la barra, para quedar alineado con el chevron, Ofertas y el buscador */
+  /* En el mapa el rótulo se centra al eje real de la barra, para quedar alineado con Ofertas y el buscador */
   .nav-brand-map .cf-neon { top: 0 !important; }
   .nav-search { flex: none; width: clamp(300px, 28vw, 460px); }
   .nav-burger { display: none !important; }
@@ -553,6 +587,16 @@ a:hover {
   .hero-cta { order: 2; z-index: 3; margin-top: clamp(10px, 3vw, 18px); }
   .hero-desc { text-shadow: 0 1px 10px rgba(0, 0, 0, .5); max-width: 420px !important; }
   .hero-search { max-width: 460px !important; width: 100%; }
+  /* más aire entre el logo (canasta + "COMPRÁ FÁCIL") y la ciudad + "EXPLORÁ TU CIUDAD";
+     ≈ el mismo espacio que hay entre "EXPLORÁ TU CIUDAD" y el buscador */
+  .hero-location { margin-top: clamp(24px, 5vw, 30px); }
+  /* buscador: el botón queda cuadrado, solo con la lupa (sin texto "Buscar") */
+  .hero-search-btn { width: 48px; padding-left: 0 !important; padding-right: 0 !important; }
+  .hero-search-btn-label { display: none; }
+  /* catálogo: el título (TIENDAS/SERVICIOS/EMPRENDIMIENTOS) al tamaño de los títulos de sección,
+     sin que el contenedor glass crezca de alto */
+  .catalog-card-title { font-size: var(--fs-h1) !important; }
+  .catalog-card-cap { height: 58px; padding-top: 0 !important; padding-bottom: 0 !important; align-items: center; }
   /* la escena se ensancha, sobresale por los costados y baja claramente hacia la parte inferior */
   .hero-city-wrap {
     order: 3;

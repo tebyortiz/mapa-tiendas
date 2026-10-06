@@ -3,6 +3,8 @@ import { Icon } from './Icon'
 
 interface Props {
   children: ReactNode
+  /** Si se pasa, se muestra en vez de la pantalla completa (para aislar partes no críticas, p. ej. la escena 3D). */
+  fallback?: ReactNode
 }
 
 interface State {
@@ -26,6 +28,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (!this.state.hasError) return this.props.children
+    if (this.props.fallback !== undefined) return this.props.fallback
     return (
       <div
         role="alert"

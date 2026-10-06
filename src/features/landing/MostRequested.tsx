@@ -2,7 +2,6 @@ import { GlowBackdrop } from '../../components/brand/GlowBackdrop'
 import { TypeAvatar } from '../../components/business/TypeAvatar'
 import { Button } from '../../components/ui/Button'
 import { ImageSlot } from '../../components/ui/ImageSlot'
-import { SoonBadge } from '../../components/ui/SoonBadge'
 import { useHover } from '../../components/ui/useHover'
 import { REQUESTED } from '../../data/offers'
 import type { Requested } from '../../data/types'
@@ -17,11 +16,11 @@ function RequestedCard({ r }: { r: Requested }) {
     <article {...bind} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Círculo + nombre de quien lo ofrece: ahora va arriba de la imagen */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 2px' }}>
-        <ImageSlot shape="circle" placeholder="Foto" style={{ width: 44, height: 44, flex: 'none', boxShadow: 'inset 0 0 0 1px var(--border-strong)', borderRadius: '50%' }} />
+        <ImageSlot src={r.avatar} shape="circle" placeholder="Foto" style={{ width: 44, height: 44, flex: 'none', boxShadow: 'inset 0 0 0 1px var(--border-strong)', borderRadius: '50%' }} />
         <span style={{ font: '800 15px/1.2 var(--font-body)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-strong)' }}>{r.person}</span>
       </div>
       <div style={{ position: 'relative', aspectRatio: '1.7 / 1', borderRadius: 'var(--radius-panel)', overflow: 'hidden', background: 'var(--surface)', boxShadow: h ? `var(--glow-${r.type})` : 'inset 0 0 0 1px var(--border)', transition: 'box-shadow var(--dur-slow) var(--ease-out)' }}>
-        <ImageSlot placeholder="Foto del servicio o emprendimiento" style={{ position: 'absolute', inset: 0 }} />
+        <ImageSlot src={r.image} placeholder="Foto del servicio o emprendimiento" style={{ position: 'absolute', inset: 0 }} />
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, padding: '0 2px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -44,10 +43,15 @@ export function LandingMostRequested({ geo }: { onOpenMap: OpenMap; geo: ReturnT
       </div>
       <div className="requested-body" style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ position: 'relative', maxWidth: 'var(--container)', margin: '0 auto' }}>
-          <SectionHead className="requested-head" title="MÁS SOLICITADOS" subtitle="Servicios y emprendimientos más demandados en:" city={geo.nearby?.city ?? 'Tunuyán'} badge={<SoonBadge />} />
+          <SectionHead className="requested-head" title="MÁS SOLICITADOS" subtitle="Servicios y emprendimientos más demandados en:" city={geo.nearby?.city ?? 'Tunuyán'} />
         </div>
-        <div style={{ opacity: 0.72 }}>
-          <SlideCarousel items={REQUESTED} render={(r) => <RequestedCard r={r} />} />
+        <SlideCarousel items={REQUESTED} render={(r) => <RequestedCard r={r} />} />
+        <div className="requested-ribbon" aria-hidden="true">
+          <div className="catalog-ribbon-track">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <span key={i}>Próximamente ✦</span>
+            ))}
+          </div>
         </div>
       </div>
     </section>
