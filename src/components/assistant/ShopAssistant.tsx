@@ -6,6 +6,14 @@ import { Icon } from '../ui/Icon'
 import { IconButton } from '../ui/IconButton'
 import { SearchInput, SEARCH_SUGGESTIONS } from '../ui/SearchInput'
 
+/**
+ * Asistente de compra (robot flotante) temporalmente oculto a pedido: se mantiene TODA la
+ * lógica y el componente intactos; basta con poner esto en `true` para reactivarlo en
+ * landing y mapa. El buscador de productos del hero/navbar usa el mismo endpoint, así que
+ * la función de buscar productos sigue disponible aunque el robot no se muestre.
+ */
+export const SHOP_ASSISTANT_ENABLED: boolean = false
+
 type Phase = 'idle' | 'loading' | 'empty' | 'error'
 
 /** Avatar del asistente: canasta neón (rainbow) con cara de robot. */

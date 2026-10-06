@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { MapRef } from 'react-map-gl/mapbox'
 import { BusinessSheet } from '../components/business/BusinessSheet'
-import { ShopAssistant } from '../components/assistant/ShopAssistant'
+import { ShopAssistant, SHOP_ASSISTANT_ENABLED } from '../components/assistant/ShopAssistant'
 import { Icon } from '../components/ui/Icon'
 import { IconButton } from '../components/ui/IconButton'
 import { Toast } from '../components/ui/Toast'
@@ -56,6 +56,10 @@ export default function MapPage() {
   const [searchCenter, setSearchCenter] = useState<{ lat: number; lng: number }>(cached?.pos ?? MAP_CENTER)
   const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(cached?.pos ?? MAP_CENTER)
   const [exploring, setExploring] = useState(false)
+  // Espejo del centro de búsqueda: deja que refresh() (un listener estable, sin deps) lea el
+  // valor actual sin re-suscribirse ni re-ejecutarse en cada exploración.
+  const searchCenterRef = useRef(searchCenter)
+  searchCenterRef.current = searchCenter
   // Resultados del asistente de compra: cuando hay, el mapa pasa a "modo producto"
   const ps = useProductSearch()
   const productMode = !!ps && ps.hits.length > 0
@@ -103,11 +107,15 @@ export default function MapPage() {
     if (perm && perm.state !== 'granted') return
     try {
       const n = await locateAndFetch()
-      setApiBiz(n.businesses)
       setUserPos(n.pos)
-      // La revalidación en segundo plano solo re-centra la búsqueda si el usuario no se fue
-      // a explorar otra zona (si está explorando, mantenemos sus resultados).
-      setSearchCenter((prev) => (metersBetween(prev, n.pos) < 50 ? n.pos : prev))
+      // La revalidación en segundo plano solo refresca el listado y re-centra si el usuario
+      // sigue mirando su propia ubicación. Si se fue a explorar otra zona, dejamos esos
+      // resultados intactos: así, al volver de abrir una web externa (que dispara
+      // visibilitychange), el mapa y la ficha abierta no saltan a la zona del GPS.
+      if (metersBetween(searchCenterRef.current, n.pos) < 50) {
+        setApiBiz(n.businesses)
+        setSearchCenter(n.pos)
+      }
     } catch (e) {
       console.error('[geo] refresh error', e)
     }
@@ -372,7 +380,7 @@ export default function MapPage() {
             <OffersStrip b={s} />
           </div>
         )}
-        <ShopAssistant center={searchCenter} />
+        {SHOP_ASSISTANT_ENABLED && <ShopAssistant center={searchCenter} />}
       </div>
     </div>
   )

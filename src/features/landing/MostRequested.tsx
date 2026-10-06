@@ -2,6 +2,7 @@ import { GlowBackdrop } from '../../components/brand/GlowBackdrop'
 import { TypeAvatar } from '../../components/business/TypeAvatar'
 import { Button } from '../../components/ui/Button'
 import { ImageSlot } from '../../components/ui/ImageSlot'
+import { SoonBadge } from '../../components/ui/SoonBadge'
 import { useHover } from '../../components/ui/useHover'
 import { REQUESTED } from '../../data/offers'
 import type { Requested } from '../../data/types'
@@ -10,7 +11,7 @@ import { OFFER_C } from './offerColors'
 import { SectionHead, SlideCarousel } from './shared'
 import type { OpenMap } from './shared'
 
-function RequestedCard({ r, onConnect }: { r: Requested; onConnect: () => void }) {
+function RequestedCard({ r }: { r: Requested }) {
   const { h, bind } = useHover()
   return (
     <article {...bind} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -28,13 +29,13 @@ function RequestedCard({ r, onConnect }: { r: Requested; onConnect: () => void }
           <h3 style={{ margin: 0, font: '800 clamp(18px,1.8vw,24px)/1.2 var(--font-body)', textTransform: 'uppercase', color: OFFER_C[r.type] }}>{r.service}</h3>
         </div>
         <p style={{ margin: '2px 0 0', minHeight: '3em', font: '400 14px/1.5 var(--font-body)', color: 'var(--text-muted)' }}>{r.description}</p>
-        <div style={{ marginTop: 10 }}><Button type={r.type} size="sm" icon="message-circle" onClick={onConnect}>conectar</Button></div>
+        <div style={{ marginTop: 10 }}><Button type={r.type} size="sm" icon="message-circle" disabled title="Próximamente">conectar</Button></div>
       </div>
     </article>
   )
 }
 
-export function LandingMostRequested({ onOpenMap, geo }: { onOpenMap: OpenMap; geo: ReturnType<typeof useNearby> }) {
+export function LandingMostRequested({ geo }: { onOpenMap: OpenMap; geo: ReturnType<typeof useNearby> }) {
   return (
     <section id="mas-solicitados" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '56px 0' }}>
       <GlowBackdrop palette="servicio" intensity={0.3} />
@@ -43,9 +44,11 @@ export function LandingMostRequested({ onOpenMap, geo }: { onOpenMap: OpenMap; g
       </div>
       <div className="requested-body" style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ position: 'relative', maxWidth: 'var(--container)', margin: '0 auto' }}>
-          <SectionHead className="requested-head" title="MÁS SOLICITADOS" subtitle="Servicios y emprendimientos más demandados en:" city={geo.nearby?.city ?? 'Tunuyán'} action="ver todos" onAction={() => onOpenMap('servicio')} />
+          <SectionHead className="requested-head" title="MÁS SOLICITADOS" subtitle="Servicios y emprendimientos más demandados en:" city={geo.nearby?.city ?? 'Tunuyán'} badge={<SoonBadge />} />
         </div>
-        <SlideCarousel items={REQUESTED} render={(r) => <RequestedCard r={r} onConnect={() => onOpenMap(r.type, r.businessId)} />} />
+        <div style={{ opacity: 0.72 }}>
+          <SlideCarousel items={REQUESTED} render={(r) => <RequestedCard r={r} />} />
+        </div>
       </div>
     </section>
   )

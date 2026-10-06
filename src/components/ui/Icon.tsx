@@ -3,8 +3,8 @@ import {
   Apple, Beef, Candy, Croissant, Package, ShoppingBasket,
   ArrowRight, BadgePercent, Bot, Bone, BriefcaseMedical, CalendarClock, Cake, CarFront, ChevronDown, ChevronLeft,
   ChevronRight, ChevronUp, Clock, ConciergeBell, Dog, Droplets, Footprints, Gamepad2, Gift, Globe, Hammer,
-  HandPlatter, Headphones, KeyRound, LayoutGrid, ListSortDescending, LocateFixed, LogIn, Map, MapPin, MapPinned, MessageCircle, Minus,
-  Navigation, Palette, Pizza, Plus, Scissors, Search, Shirt, ShoppingBag, Signpost, Smartphone, Sofa, Sparkles, Store,
+  HandPlatter, Headphones, KeyRound, LayoutGrid, ListSortDescending, LocateFixed, LogIn, Mail, Map, MapPin, MapPinned, MessageCircle, Minus,
+  Navigation, Palette, Phone, Pizza, Plus, Scissors, Search, Shirt, ShoppingBag, Signpost, Smartphone, Sofa, Sparkles, Store,
   Tag, UserPlus, UserRound, UtensilsCrossed, Wrench, X, Zap,
 } from 'lucide-react'
 import type { LucideProps } from 'lucide-react'
@@ -32,6 +32,8 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
   clock: Clock,
   'concierge-bell': ConciergeBell,
   droplets: Droplets,
+  mail: Mail,
+  phone: Phone,
   gift: Gift,
   'key-round': KeyRound,
   palette: Palette,
