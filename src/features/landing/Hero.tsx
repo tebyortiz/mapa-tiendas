@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { FormEvent, PointerEvent } from 'react'
-import { GlowBackdrop } from '../../components/brand/GlowBackdrop'
 import { Button } from '../../components/ui/Button'
 import { SearchInput, SEARCH_SUGGESTIONS } from '../../components/ui/SearchInput'
 import { LocationRow } from './shared'
@@ -104,8 +103,8 @@ function HeroCity() {
 
 export function LandingHero({ onOpenMap, onSearch, city }: { onOpenMap: () => void; onSearch?: (q: string) => void; city?: string }) {
   const [q, setQ] = useState('')
-  // Ancho real del contenido de la marca (canasta + "COMPRÁ FÁCIL"); en desktop se usa como
-  // max-width del texto y del buscador para que ocupen exactamente lo mismo que el logo.
+  // Ancho real de la fila de marca (canasta + "COMPRÁ FÁCIL"); en desktop se usa como ancho del
+  // buscador y de la descripción, para que ocupen exactamente lo mismo que el logo.
   const brandRef = useRef<HTMLDivElement>(null)
   const [brandW, setBrandW] = useState<number>()
   useEffect(() => {
@@ -135,39 +134,49 @@ export function LandingHero({ onOpenMap, onSearch, city }: { onOpenMap: () => vo
   }
   return (
     <section id="hero" className="lp-sec" style={{ position: 'relative', padding: '32px var(--gutter) 48px' }}>
-      <GlowBackdrop palette="rainbow" intensity={0.38} />
+      {/* Aurora viva: blobs arcoíris que derivan, respiran y rotan (reemplaza los glows estáticos) */}
+      <div className="hero-aurora" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
       <div className="lp-hero" style={{ position: 'relative', zIndex: 1, maxWidth: 'var(--container)', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24, minHeight: 'min(760px,calc(100vh - 140px))', ['--hero-brand-w' as string]: brandW ? `${brandW}px` : undefined }}>
         <div className="hero-head">
-        <div ref={brandRef} className="hero-brand" style={{ order: 1, display: 'flex', alignItems: 'flex-end', gap: 'clamp(12px,2vw,20px)', marginTop: 'clamp(8px,5vw,64px)' }}>
-          <div className="hero-basket" style={{ flex: 'none' }}>
-            <img src="/assets/logo/basket-mark.png" alt="" className="hero-basket-img" style={{ display: 'block', height: 'clamp(110px,19vw,240px)', width: 'auto', marginBottom: 'clamp(10px,2vw,26px)' }} />
+          {/* Grilla de marca: canasta + "COMPRÁ FÁCIL" arriba; chip de ciudad (bajo la canasta) +
+              "EXPLORÁ TU CIUDAD" (bajo el texto) debajo. La disposición exacta la controla el CSS. */}
+          <div ref={brandRef} className="hero-brand">
+            <div className="hero-basket">
+              {/* onda expansiva de glow sincronizada con el destello del basket */}
+              <span className="hero-basket-wave" aria-hidden="true" />
+              <img src="/assets/logo/basket-mark.png" alt="" className="hero-basket-img" style={{ display: 'block', height: 'clamp(110px,19vw,240px)', width: 'auto', marginBottom: 'clamp(10px,2vw,26px)' }} />
+            </div>
+            <h1 className="cf-neon cf-neon-on hero-neon" aria-label="Comprá Fácil" style={{ margin: 0, fontSize: 'clamp(44px,7vw,100px)', lineHeight: 0.95, whiteSpace: 'nowrap' }}>
+              <FlickerWord text="COMPRÁ" seed={0} />
+              <br />
+              <FlickerWord text="FÁCIL" seed={6} />
+            </h1>
+            <div className="hero-location">
+              <LocationRow city={city ?? 'Tunuyán'} />
+            </div>
+            <div className="hero-explore" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ font: '800 clamp(18px,2.4vw,26px)/1.2 var(--font-body)', letterSpacing: '.12em', textTransform: 'uppercase', color: '#fff', textShadow: 'var(--neon-text-soft)' }}>EXPLORÁ TU CIUDAD</div>
+            </div>
           </div>
-          <h1 className="cf-neon cf-neon-on" aria-label="Comprá Fácil" style={{ margin: 0, fontSize: 'clamp(44px,7vw,100px)', lineHeight: 0.95, whiteSpace: 'nowrap' }}>
-            <FlickerWord text="COMPRÁ" seed={0} />
-            <br />
-            <FlickerWord text="FÁCIL" seed={6} />
-          </h1>
-        </div>
-
-        <div className="hero-explore" style={{ order: 2, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ font: '800 clamp(18px,2.4vw,26px)/1.2 var(--font-body)', letterSpacing: '.12em', textTransform: 'uppercase', color: '#fff', textShadow: 'var(--neon-text-soft)' }}>EXPLORÁ TU CIUDAD</div>
-        </div>
-
-        <div className="hero-location" style={{ order: 3 }}>
-          <LocationRow city={city ?? 'Tunuyán'} />
-        </div>
         </div>
 
         <HeroCity />
 
-        <p className="hero-desc" style={{ order: 5, margin: 0, maxWidth: 500, font: '500 var(--fs-body-lg)/1.5 var(--font-body)', color: 'var(--text-body)', textWrap: 'pretty' }}>
-          Tiendas, servicios y emprendimientos de tu cuadra y alrededores, todos en un mapa. Encontrá lo que necesitás, cerca tuyo.
-        </p>
+        {/* Consola: buscador arriba (protagonista sobre el mapa) y descripción debajo */}
+        <div className="hero-cta">
+          <form className="hero-search" onSubmit={submit} style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
+            <SearchInput rainbow value={q} onChange={setQ} placeholder="¿Qué buscás cerca tuyo?" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
+            <Button htmlType="submit" icon="search" style={{ height: 48, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>Buscar</Button>
+          </form>
 
-        <form className="hero-search" onSubmit={submit} style={{ order: 6, display: 'flex', gap: 8, alignItems: 'center', width: '100%', maxWidth: 560 }}>
-          <SearchInput rainbow value={q} onChange={setQ} placeholder="¿Qué buscás cerca tuyo?" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
-          <Button htmlType="submit" icon="search" style={{ height: 48, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>Buscar</Button>
-        </form>
+          <p className="hero-desc" style={{ margin: 0, font: '700 var(--fs-body-lg)/1.5 var(--font-body)', color: 'var(--text-body)', textWrap: 'pretty' }}>
+            Tiendas, servicios y emprendimientos de tu cuadra y alrededores, todos en un mapa. Encontrá lo que necesitás, cerca tuyo.
+          </p>
+        </div>
       </div>
     </section>
   )

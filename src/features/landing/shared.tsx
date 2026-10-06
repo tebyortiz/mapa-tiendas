@@ -18,11 +18,14 @@ export function LocationRow({ city = 'Tunuyán' }: { city?: string }) {
   )
 }
 
-export function SectionHead({ title, subtitle, type, city, action, onAction, className }: { title: ReactNode; subtitle: string; type?: BusinessType; city?: string; action?: string; onAction?: () => void; className?: string }) {
+export function SectionHead({ title, subtitle, type, city, action, onAction, badge, className }: { title: ReactNode; subtitle: string; type?: BusinessType; city?: string; action?: string; onAction?: () => void; badge?: ReactNode; className?: string }) {
   return (
     <div className={className} style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 'var(--container)', margin: '0 auto', padding: '0 var(--gutter)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <NeonHeading as="h2" type={type}>{title}</NeonHeading>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <NeonHeading as="h2" type={type}>{title}</NeonHeading>
+          {badge}
+        </div>
         {action && <Button variant="ghost" size="sm" iconRight="arrow-right" onClick={onAction} style={{ transform: 'translateY(-5px)' }}>{action}</Button>}
       </div>
       <p style={{ margin: 0, font: '500 16px/1.55 var(--font-body)', color: 'var(--text-muted)', maxWidth: 560 }}>{subtitle}</p>

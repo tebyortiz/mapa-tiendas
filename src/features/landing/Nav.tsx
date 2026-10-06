@@ -16,13 +16,15 @@ interface NavLinkDef {
   c2: string
   rgb: string
   grad?: string
+  /** Función aún no disponible: se muestra deshabilitada con "Próximamente" */
+  soon?: boolean
 }
 
 const NAV_LINKS: NavLinkDef[] = [
   { id: 'tiendas', label: 'Tiendas', icon: 'shopping-bag', c: 'var(--tienda)', c2: 'var(--tienda-2)', rgb: '255,111,97' },
   { id: 'servicios', label: 'Servicios', icon: 'wrench', c: 'var(--servicio)', c2: 'var(--servicio-2)', rgb: '61,139,255' },
   { id: 'emprendimientos', label: 'Emprendimientos', icon: 'sparkles', c: 'var(--emprendimiento)', c2: 'var(--emprendimiento-2)', rgb: '155,107,255' },
-  { id: 'ofertas', label: 'Ofertas', icon: 'badge-percent', c: '#FFFFFF', c2: '#FFFFFF', rgb: '255,255,255', grad: 'var(--rainbow-grad)' },
+  { id: 'ofertas', label: 'Ofertas', icon: 'badge-percent', c: '#FFFFFF', c2: '#FFFFFF', rgb: '255,255,255', grad: 'var(--rainbow-grad)', soon: true },
 ]
 
 function NeonNavLink({ l, i, base }: { l: NavLinkDef; i: number; base: string }) {
@@ -48,6 +50,20 @@ function NeonNavLink({ l, i, base }: { l: NavLinkDef; i: number; base: string })
       </span>
     </>
   )
+  // Función aún no disponible: rótulo neón apagado, opaco, no interactivo, con "Próximamente".
+  if (l.soon) {
+    return (
+      <span
+        aria-label={`${l.label} (próximamente)`}
+        title="Próximamente"
+        aria-disabled="true"
+        className={`nav-link-${l.id} nav-link-soon`}
+        style={{ ...style, opacity: 0.4, cursor: 'default' }}
+      >
+        {inner}
+      </span>
+    )
+  }
   const common = {
     'aria-label': l.label,
     title: l.label,
@@ -125,6 +141,19 @@ function NavDrawer({ base, search, onClose }: { base: string; search?: LandingNa
         <p style={introText}>Explorá por categoría y descubrí qué hay cerca tuyo.</p>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 14 }}>
           {NAV_LINKS.map((l, i) => {
+            // Función aún no disponible: fila opaca, no navegable, con "Próximamente".
+            if (l.soon) {
+              return (
+                <div key={l.id} aria-disabled="true" title="Próximamente" style={{ ...linkStyle, opacity: 0.45, cursor: 'default' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <span style={{ display: 'inline-flex', filter: `drop-shadow(0 0 5px ${l.c})` }}>
+                      <Icon name={l.icon} size={22} color={l.c} />
+                    </span>
+                    {l.label}
+                  </span>
+                </div>
+              )
+            }
             const inner = (
               <>
                 <span style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -147,8 +176,8 @@ function NavDrawer({ base, search, onClose }: { base: string; search?: LandingNa
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 16, font: '800 12px var(--font-body)', letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
             <Icon name="user-round" size={16} /> Mi cuenta
           </div>
-          <Button icon="log-in" fullWidth style={{ color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>Ingresar</Button>
-          <Button variant="secondary" icon="user-plus" fullWidth>Crear cuenta</Button>
+          <Button icon="log-in" fullWidth disabled title="Próximamente" style={{ color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>Ingresar</Button>
+          <Button variant="secondary" icon="user-plus" fullWidth disabled title="Próximamente">Crear cuenta</Button>
         </div>
       </aside>
     </div>,
@@ -213,8 +242,8 @@ export function LandingNav({ onOpenMap, base = '', sticky = true, cta = true, se
           {/* En el mapa: desktop muestra Ofertas (en .lp-links) + buscador; mobile no lleva Ofertas. */}
           {cta && (
             <>
-              {/* Ingresar: solo desktop (en mobile la cuenta vive en el menú lateral). Va antes de "Mapa". */}
-              <Button variant="secondary" icon="log-in" className="nav-login" style={{ height: 44 }}>Ingresar</Button>
+              {/* Ingresar: solo desktop (en mobile la cuenta vive en el menú lateral). Va antes de "Mapa". Deshabilitado por ahora. */}
+              <Button variant="secondary" icon="log-in" className="nav-login" disabled title="Próximamente" style={{ height: 44 }}>Ingresar</Button>
               <button
                 type="button"
                 className="nav-cta"
