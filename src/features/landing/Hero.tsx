@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { FormEvent, PointerEvent } from 'react'
 import { Button } from '../../components/ui/Button'
+import { ErrorBoundary } from '../../components/ui/ErrorBoundary'
 import { SearchInput, SEARCH_SUGGESTIONS } from '../../components/ui/SearchInput'
 import { LocationRow } from './shared'
 import type { ProductImage } from './city/cityConfig'
@@ -91,9 +92,11 @@ function HeroCity() {
       >
         {/* mientras carga el chunk 3D (three + drei) el área queda transparente sobre el GlowBackdrop,
             sin captura de por medio: la escena real aparece directamente */}
-        <Suspense fallback={null}>
-          <HeroCity3D images={PRODUCT_IMAGES} pointer={pointer} avatarLayer={avatarLayer} />
-        </Suspense>
+        <ErrorBoundary fallback={null}>
+          <Suspense fallback={null}>
+            <HeroCity3D images={PRODUCT_IMAGES} pointer={pointer} avatarLayer={avatarLayer} />
+          </Suspense>
+        </ErrorBoundary>
       </div>
       {/* fuera de la máscara de .hero-city: los avatares pueden subir más allá de la escena */}
       <div ref={avatarLayer} className="hero-avatars" aria-hidden="true" />
@@ -170,7 +173,7 @@ export function LandingHero({ onOpenMap, onSearch, city }: { onOpenMap: () => vo
         <div className="hero-cta">
           <form className="hero-search" onSubmit={submit} style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
             <SearchInput rainbow value={q} onChange={setQ} placeholder="¿Qué buscás cerca tuyo?" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
-            <Button htmlType="submit" icon="search" style={{ height: 48, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>Buscar</Button>
+            <Button htmlType="submit" icon="search" className="hero-search-btn" style={{ height: 48, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}><span className="hero-search-btn-label">Buscar</span></Button>
           </form>
 
           <p className="hero-desc" style={{ margin: 0, font: '700 var(--fs-body-lg)/1.5 var(--font-body)', color: 'var(--text-body)', textWrap: 'pretty' }}>

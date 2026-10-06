@@ -2,9 +2,9 @@ import type { Business, CategoryKey, Deal, BusinessType } from './types'
 import { isOpen } from '../lib/hours'
 
 const PHOTOS: Record<BusinessType, string> = {
-  tienda: '/assets/photos/tiendas-clerk.png',
-  servicio: '/assets/photos/servicios-mechanic.png',
-  emprendimiento: '/assets/photos/emprendimientos-cake.png',
+  tienda: '/assets/photos/carr-tienda01.jpg',
+  servicio: '/assets/photos/carr-servicios01.jpg',
+  emprendimiento: '/assets/photos/carr-emprend01.jpg',
 }
 
 type Raw = Omit<Business, 'deals' | 'hasOffers' | 'search' | 'image' | 'chain' | 'branch'> &
@@ -14,7 +14,7 @@ const M = '/assets/mock'
 
 const RAW: Raw[] = [
   { id: 1, type: 'tienda', chain: 'Del Valle Supermercados', branch: 'Súper Del Valle Centro', name: 'Súper Del Valle', category: 'supermercado', categoryLabel: 'Supermercado', distance: '350 m', open: true, delivery: ['mostrador', 'delivery'], lat: -33.5762, lng: -69.0149, address: 'Av. San Martín 1020', hours: 'Todos los días · 8 a 22 h', description: 'Almacén, verdulería y carnicería en un solo lugar.' },
-  { id: 4, type: 'tienda', chain: 'Punto Tech', branch: 'Punto Tech Sarmiento', name: 'Punto Tech', category: 'electronica', categoryLabel: 'Electrónica', distance: '450 m', open: true, delivery: ['mostrador', 'delivery'], lat: -33.5779, lng: -69.0171, address: 'Sarmiento 210', hours: 'Lun a Sáb · 9 a 13 y 17 a 21 h', description: 'Celulares, accesorios y reparaciones al toque.', image: '/assets/photos/tiendas-clerk.png' },
+  { id: 4, type: 'tienda', chain: 'Punto Tech', branch: 'Punto Tech Sarmiento', name: 'Punto Tech', category: 'electronica', categoryLabel: 'Electrónica', distance: '450 m', open: true, delivery: ['mostrador', 'delivery'], lat: -33.5779, lng: -69.0171, address: 'Sarmiento 210', hours: 'Lun a Sáb · 9 a 13 y 17 a 21 h', description: 'Celulares, accesorios y reparaciones al toque.', image: '/assets/photos/carr-tienda02.jpg' },
   { id: 6, type: 'tienda', chain: 'Patitas Pet Shop', branch: 'Patitas Alem', name: 'Patitas', category: 'mascotas', categoryLabel: 'Mascotas', distance: '900 m', open: true, delivery: ['mostrador', 'delivery'], lat: -33.5794, lng: -69.0211, address: 'Alem 118', hours: 'Lun a Sáb · 9 a 21 h', description: 'Alimento balanceado, accesorios y peluquería.' },
   { id: 7, type: 'tienda', chain: 'Farmacias Central', branch: 'Farmacia Central San Martín', name: 'Farmacia Central', category: 'farmacia', categoryLabel: 'Farmacia', distance: '300 m', open: true, delivery: ['mostrador'], lat: -33.5771, lng: -69.0137, address: 'San Martín 1105', hours: '24 h', description: 'De turno esta semana.' },
   { id: 9, type: 'tienda', chain: 'Moda Andina', branch: 'Moda Andina Roca', name: 'Moda Andina', category: 'ropa', categoryLabel: 'Ropa', distance: '700 m', open: false, delivery: ['mostrador'], lat: -33.5822, lng: -69.0165, address: 'Roca 402', hours: 'Lun a Sáb · 9 a 13 y 17 a 21 h', description: 'Ropa urbana y de montaña.' },

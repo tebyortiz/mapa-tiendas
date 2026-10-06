@@ -5,11 +5,22 @@ import { CatalogCard } from '../../components/business/CatalogCard'
 import type { BusinessType } from '../../data/types'
 import type { OpenMap } from './shared'
 
-const CARDS: [BusinessType, string, string, string][] = [
-  ['tienda', 'TIENDAS', 'Supermercados, ropa, electrónica y todo lo del día a día.', 'tiendas-clerk'],
-  ['servicio', 'SERVICIOS', 'Mecánicos, ferreterías, técnicos y más, a pocas cuadras.', 'servicios-mechanic'],
-  ['emprendimiento', 'EMPRENDIMIENTOS', 'Lo que hacen tus vecinos: comida, diseño, oficios.', 'emprendimientos-cake'],
+interface CardDef {
+  type: BusinessType
+  title: string
+  description: string
+  /** Prefijo de las 3 imágenes del carrusel: `${slug}01..03.jpg` */
+  slug: string
+  comingSoon?: boolean
+}
+
+const CARDS: CardDef[] = [
+  { type: 'tienda', title: 'TIENDAS', description: 'Supermercados, ropa, electrónica y todo lo del día a día.', slug: 'carr-tienda' },
+  { type: 'servicio', title: 'SERVICIOS', description: 'Mecánicos, ferreterías, técnicos y más, a pocas cuadras.', slug: 'carr-servicios', comingSoon: true },
+  { type: 'emprendimiento', title: 'EMPRENDIMIENTOS', description: 'Lo que hacen tus vecinos: comida, diseño, oficios.', slug: 'carr-emprend', comingSoon: true },
 ]
+
+const slides = (slug: string) => [1, 2, 3].map((n) => `/assets/photos/${slug}0${n}.jpg`)
 
 export function LandingCatalog({ onOpenMap }: { onOpenMap: OpenMap }) {
   return (
@@ -28,10 +39,10 @@ export function LandingCatalog({ onOpenMap }: { onOpenMap: OpenMap }) {
           </p>
         </div>
         <div className="lp-cards" style={{ display: 'grid', gap: 16 }}>
-          {CARDS.map(([t, ti, d, p], i) => (
-            <Reveal key={t} i={i}>
-              <div id={ti.toLowerCase()}>
-                <CatalogCard type={t} title={ti} description={d} image={`/assets/photos/${p}.png`} cta="VER MAPA" height={420} onClick={() => onOpenMap(t)} />
+          {CARDS.map((c, i) => (
+            <Reveal key={c.type} i={i}>
+              <div id={c.title.toLowerCase()}>
+                <CatalogCard type={c.type} title={c.title} description={c.description} image={slides(c.slug)} comingSoon={c.comingSoon} startDelay={i * 900} height={420} onClick={() => onOpenMap(c.type)} />
               </div>
             </Reveal>
           ))}

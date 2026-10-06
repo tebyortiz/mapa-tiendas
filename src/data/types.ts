@@ -94,4 +94,8 @@ export interface Requested {
   person: string
   service: string
   description: string
+  /** Foto del servicio o emprendimiento */
+  image?: string
+  /** Foto de la persona que lo ofrece */
+  avatar?: string
 }

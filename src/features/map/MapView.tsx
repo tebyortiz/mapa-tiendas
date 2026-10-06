@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import type { RefObject } from 'react'
 import Map, { Layer, Marker, Source } from 'react-map-gl/mapbox'
 import type { MapRef } from 'react-map-gl/mapbox'
@@ -30,10 +30,9 @@ interface MapViewProps {
 export function MapView({ items, selectedId, onSelect, mapRef, userPos = MAP_CENTER, productHits, selectedPinId, onSelectPin, searchCenter, searchRadius = 5000, onMoveEnd }: MapViewProps) {
   // Solo se recalcula el polígono cuando cambia el centro o el radio de la búsqueda.
   const area = useMemo(() => (searchCenter ? circlePolygon(searchCenter, searchRadius) : null), [searchCenter, searchRadius])
-  useEffect(() => {
-    const s = items.find((i) => i.id === selectedId)
-    if (s) mapRef.current?.easeTo({ center: [s.lng, s.lat - 0.0015], duration: 500 })
-  }, [selectedId, items, mapRef])
+  // No se recentra el mapa al seleccionar un comercio: la vista queda donde está y el usuario puede
+  // seguir arrastrando/explorando con la ficha abierta. (Antes un easeTo movía el marker hacia arriba
+  // y, al re-dispararse en cada render, "pegaba" la vista al marker seleccionado.)
 
   return (
     <div style={{ position: 'absolute', inset: 0 }}>

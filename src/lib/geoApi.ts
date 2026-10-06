@@ -82,7 +82,7 @@ const toDeal = (o: ApiOffer): Deal => ({
   products: o.products.map((p) => ({ name: p.name, discount: `-${p.discount}%`, image: p.image })),
 })
 
-const FALLBACK_PHOTO = '/assets/photos/tiendas-clerk.png'
+const FALLBACK_PHOTO = '/assets/photos/carr-tienda01.jpg'
 
 const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 

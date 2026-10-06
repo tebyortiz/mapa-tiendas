@@ -196,7 +196,7 @@ export interface LandingNavProps {
 }
 
 export function LandingNav({ onOpenMap, base = '', sticky = true, cta = true, search }: LandingNavProps) {
-  // En el mapa (cta=false) la marca pasa a ser "MAPA VIRTUAL" y aparece un back (chevron) a la izquierda.
+  // En el mapa (cta=false) la marca pasa a ser "MAPA VIRTUAL" y, al hacer click, vuelve a la landing.
   const mapMode = !cta
   // En el mapa: más aire entre la canasta y el texto (como en la landing, que se ve apretado junto al chevron).
   const brand = <Wordmark size={18} text={mapMode ? 'MAPA VIRTUAL' : undefined} style={mapMode ? { gap: 10 } : undefined} />
@@ -212,19 +212,13 @@ export function LandingNav({ onOpenMap, base = '', sticky = true, cta = true, se
       />
       <div className={`lp-nav${cta ? ' lp-nav-landing' : ''}`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 76, padding: '14px var(--gutter)' }}>
         <div className="nav-left" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* En el mapa, el back al inicio: solo desktop (en mobile el acceso vive en el menú hamburguesa). */}
-          {mapMode && (
-            <Link to="/" className="nav-back" aria-label="Volver al inicio" title="Volver al inicio" style={{ width: 44, height: 44, flex: 'none', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
-              <Icon name="chevron-left" size={28} color="#fff" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,.6))' }} />
-            </Link>
-          )}
           {/* Ícono del menú en mobile: mismo tamaño en la landing y en el mapa */}
           <button type="button" className="nav-burger" aria-label="Abrir menú" onClick={() => setMenu(true)} style={{ width: 44, height: 44, flex: 'none', alignItems: 'center', justifyContent: 'center', padding: 0, border: 'none', cursor: 'pointer', background: 'transparent' }}>
             <Icon name="list-sort-descending" size={38} color="#fff" style={{ filter: 'drop-shadow(0 0 3px #fff) drop-shadow(0 0 9px rgba(255,255,255,.8)) drop-shadow(0 0 18px rgba(255,255,255,.45))' }} />
           </button>
           {mapMode ? (
-            // En el mapa la marca es solo rótulo: no debe navegar a ningún lado al hacer click.
-            <span className="nav-brand nav-brand-map" style={{ display: 'flex' }}>{brand}</span>
+            // En el mapa, la marca (canasta + "MAPA VIRTUAL") vuelve a la landing al hacer click (desktop y mobile).
+            <Link to="/" className="nav-brand nav-brand-map" aria-label="Volver al inicio" title="Volver al inicio" style={{ display: 'flex', textDecoration: 'none' }}>{brand}</Link>
           ) : base ? (
             <Link to={`${base}#hero`} className="nav-brand" style={{ display: 'flex', textDecoration: 'none' }}>{brand}</Link>
           ) : (
