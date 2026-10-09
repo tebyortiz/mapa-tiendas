@@ -8,7 +8,7 @@ import { ProductMarker } from '../../components/business/ProductMarker'
 import type { Business } from '../../data/types'
 import type { ProductHit } from '../../lib/productSearch'
 import { circlePolygon } from '../../lib/geoApi'
-import { MAP_CENTER, MAPBOX_STYLE, MAPBOX_TOKEN } from '../../lib/mapbox'
+import { FALLBACK_CENTER, MAPBOX_STYLE, MAPBOX_TOKEN } from '../../lib/mapbox'
 
 interface MapViewProps {
   items: Business[]
@@ -27,7 +27,7 @@ interface MapViewProps {
   onMoveEnd?: (center: { lat: number; lng: number }) => void
 }
 
-export function MapView({ items, selectedId, onSelect, mapRef, userPos = MAP_CENTER, productHits, selectedPinId, onSelectPin, searchCenter, searchRadius = 5000, onMoveEnd }: MapViewProps) {
+export function MapView({ items, selectedId, onSelect, mapRef, userPos = FALLBACK_CENTER, productHits, selectedPinId, onSelectPin, searchCenter, searchRadius = 5000, onMoveEnd }: MapViewProps) {
   // Solo se recalcula el polígono cuando cambia el centro o el radio de la búsqueda.
   const area = useMemo(() => (searchCenter ? circlePolygon(searchCenter, searchRadius) : null), [searchCenter, searchRadius])
   // No se recentra el mapa al seleccionar un comercio: la vista queda donde está y el usuario puede

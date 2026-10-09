@@ -3,8 +3,10 @@ export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string
 
 export const MAPBOX_STYLE = 'mapbox://styles/mapbox/dark-v11'
 
-// Centro de Tunuyán, Mendoza
-export const MAP_CENTER = { lat: -33.5765, lng: -69.0155 }
+// Encuadre neutro SOLO para la cámara inicial del mapa mientras el usuario todavía no
+// compartió su ubicación (provincia de Mendoza). Nunca se usa para pedir comercios al
+// backend: los resultados siempre salen de la ubicación real detectada.
+export const FALLBACK_CENTER = { lat: -33.5, lng: -68.8 }
 
 /**
  * Reverse-geocoding: dado un lat/lng, devuelve el nombre de la localidad/ciudad real

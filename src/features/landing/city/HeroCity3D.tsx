@@ -306,16 +306,21 @@ function CameraRig() {
 export default function HeroCity3D({ images, pointer, avatarLayer }: { images: ProductImage[]; pointer: RefObject<{ x: number; y: number }>; avatarLayer: RefObject<HTMLDivElement> }) {
   const [registry] = useState<Registry>(() => new Map())
   // En mobile el contenedor (aspect-ratio + will-change) a veces monta con tamaño 0 y R3F no vuelve
-  // a medir hasta el primer scroll/resize, dejando la escena en blanco. Forzamos la remedición al montar.
+  // a medir hasta el primer scroll/resize, dejando la escena en blanco. Forzamos la remedición al montar
+  // y cada vez que el contenedor de la escena cambia de tamaño.
   useEffect(() => {
     const kick = () => window.dispatchEvent(new Event('resize'))
     const raf1 = requestAnimationFrame(() => requestAnimationFrame(kick))
     const t = setTimeout(kick, 300)
+    const wrap = avatarLayer.current?.parentElement
+    const ro = wrap ? new ResizeObserver(() => requestAnimationFrame(kick)) : null
+    if (wrap) ro?.observe(wrap)
     return () => {
       cancelAnimationFrame(raf1)
       clearTimeout(t)
+      ro?.disconnect()
     }
-  }, [])
+  }, [avatarLayer])
   return (
     <Canvas flat orthographic dpr={[1, 1.75]} camera={{ position: [10, 8.5, 10], zoom: 60, near: 0.1, far: 100 }} gl={{ alpha: true, antialias: true }}>
       <CameraRig />

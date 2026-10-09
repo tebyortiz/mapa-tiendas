@@ -9,11 +9,15 @@ import type { BusinessType } from '../../data/types'
 
 export type OpenMap = (type?: BusinessType, id?: number) => void
 
-export function LocationRow({ city = 'Tunuyán' }: { city?: string }) {
+export function LocationRow({ city }: { city?: string }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <Icon name="map-pin" size={30} color="#fff" style={{ flex: 'none', filter: 'drop-shadow(0 0 3px rgba(255,255,255,.95)) drop-shadow(0 0 8px rgba(255,255,255,.85)) drop-shadow(0 0 18px rgba(255,255,255,.5))' }} />
-      <span style={{ display: 'inline-flex', alignItems: 'center', height: 44, padding: '0 18px', borderRadius: 999, background: 'var(--rainbow-grad)', boxShadow: 'var(--glow-rainbow)', font: '800 15px var(--font-body)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>{city}</span>
+      <Icon name="map-pin" size={30} color="#fff" style={{ flex: 'none', filter: city ? 'drop-shadow(0 0 3px rgba(255,255,255,.95)) drop-shadow(0 0 8px rgba(255,255,255,.85)) drop-shadow(0 0 18px rgba(255,255,255,.5))' : 'none', opacity: city ? 1 : 0.6 }} />
+      {city ? (
+        <span style={{ display: 'inline-flex', alignItems: 'center', height: 44, padding: '0 18px', borderRadius: 999, background: 'var(--rainbow-grad)', boxShadow: 'var(--glow-rainbow)', font: '800 15px var(--font-body)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}>{city}</span>
+      ) : (
+        <span style={{ display: 'inline-flex', alignItems: 'center', height: 44, padding: '0 18px', borderRadius: 999, background: 'rgba(255,255,255,.06)', boxShadow: 'inset 0 0 0 1px var(--border-strong)', font: '700 15px var(--font-body)', color: 'var(--text-muted)' }}>Ubicación no detectada</span>
+      )}
     </div>
   )
 }

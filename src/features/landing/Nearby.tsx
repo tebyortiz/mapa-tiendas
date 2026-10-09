@@ -6,9 +6,9 @@ import { Icon } from '../../components/ui/Icon'
 import { ImageSlot } from '../../components/ui/ImageSlot'
 import { useHScroll } from '../../components/ui/useHScroll'
 import { useHover } from '../../components/ui/useHover'
-import { BUSINESSES } from '../../data/businesses'
 import type { Business } from '../../data/types'
-import { useNearby } from '../../lib/nearbyStore'
+import type { Geo } from '../../lib/nearbyStore'
+import { LocationGate } from '../location/LocationGate'
 import type { OpenMap } from './shared'
 
 function NearbyStoreCard({ b, onClick }: { b: Business; onClick: () => void }) {
@@ -61,9 +61,10 @@ function NearbyStoreCard({ b, onClick }: { b: Business; onClick: () => void }) {
   )
 }
 
-export function LandingNearby({ onOpenMap, geo }: { onOpenMap: OpenMap; geo: ReturnType<typeof useNearby> }) {
+export function LandingNearby({ onOpenMap, geo }: { onOpenMap: OpenMap; geo: Geo }) {
   const trackRef = useHScroll<HTMLDivElement>()
-  const list = (geo.nearby?.businesses ?? BUSINESSES).filter((b) => b.type === 'tienda')
+  const { nearby } = geo
+  const list = (nearby?.businesses ?? []).filter((b) => b.type === 'tienda')
   return (
     <section id="cerca" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '56px 0 72px', background: 'linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.01))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)' }}>
       <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(40% 55% at 8% 100%,rgba(250,110,78,.2),transparent 70%),radial-gradient(38% 50% at 92% 95%,rgba(164,116,245,.22),transparent 70%),radial-gradient(45% 40% at 55% 0%,rgba(79,169,238,.14),transparent 70%)' }} />
@@ -71,13 +72,21 @@ export function LandingNearby({ onOpenMap, geo }: { onOpenMap: OpenMap; geo: Ret
         <NeonHeading as="h2" type="tienda">CERCA TUYO</NeonHeading>
         <Button variant="ghost" size="sm" iconRight="arrow-right" onClick={() => onOpenMap('tienda')} style={{ transform: 'translateY(-5px)' }}>Ver todo en el mapa</Button>
       </div>
-      <div ref={trackRef} className="nearby-track" style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 16, overflowX: 'auto', overflowY: 'hidden', padding: '24px var(--gutter) 20px', scrollSnapType: 'x mandatory', scrollPaddingLeft: 'var(--gutter)', scrollbarWidth: 'none', maxWidth: 'var(--container)', margin: '0 auto' }}>
-        {list.map((b, i) => (
-          <div key={b.id} style={{ flex: '0 0 min(84vw,380px)', scrollSnapAlign: 'start', display: 'flex' }}>
-            <Reveal i={i} fill><NearbyStoreCard b={b} onClick={() => onOpenMap(b.type, b.id)} /></Reveal>
-          </div>
-        ))}
-      </div>
+      {!nearby ? (
+        <div style={{ paddingTop: 20 }}><LocationGate noun="las tiendas" /></div>
+      ) : list.length === 0 ? (
+        <div style={{ maxWidth: 'var(--container)', margin: '0 auto', padding: '24px var(--gutter)', font: '500 15px/1.55 var(--font-body)', color: 'var(--text-muted)' }}>
+          Todavía no encontramos tiendas cerca de tu ubicación.
+        </div>
+      ) : (
+        <div ref={trackRef} className="nearby-track" style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 16, overflowX: 'auto', overflowY: 'hidden', padding: '24px var(--gutter) 20px', scrollSnapType: 'x mandatory', scrollPaddingLeft: 'var(--gutter)', scrollbarWidth: 'none', maxWidth: 'var(--container)', margin: '0 auto' }}>
+          {list.map((b, i) => (
+            <div key={b.id} style={{ flex: '0 0 min(84vw,380px)', scrollSnapAlign: 'start', display: 'flex' }}>
+              <Reveal i={i} fill><NearbyStoreCard b={b} onClick={() => onOpenMap(b.type, b.id)} /></Reveal>
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   )
 }

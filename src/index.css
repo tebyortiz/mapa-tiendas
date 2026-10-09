@@ -242,6 +242,11 @@
   0% { background-position: 0 0, 0 0; }
   100% { background-position: 0 0, 200% 0; }
 }
+/* Halo/glow de una sola capa que fluye en sync con cf-border-slide (mismo color por lado que el borde) */
+@keyframes cf-glow-slide {
+  0% { background-position: 0 0; }
+  100% { background-position: 200% 0; }
+}
 /* Destello especular que barre el buscador cada tanto */
 @keyframes cf-shine {
   0% { transform: translateX(-130%); }
@@ -327,6 +332,54 @@
 .shop-dock { right: 16px; bottom: 72px; }
 @media (min-width: 900px) { .shop-dock { right: 76px; bottom: 16px; } }
 
+/* ───────── Sticky de ubicación (landing + mapa) ───────── */
+/* Desktop: pill anclada arriba a la derecha, alineada con el buscador de productos sobre el mapa.
+   Mobile: círculo flotante abajo a la derecha que crece hacia la izquierda al tocarlo. */
+.loc-sticky { position: fixed; z-index: 900; pointer-events: none; }
+.loc-sticky > * { pointer-events: auto; }
+/* Landing: abajo a la derecha (a la altura del buscador del hero, sobre la ciudad 3D) */
+.loc-sticky-desk { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); right: var(--gutter); }
+/* Mapa: último lugar de la columna de controles (+, −, centrar), que sube --loc-lift para dejarle el hueco.
+   Mismo z-index que .mp-ctrl: así el panel de sucursales y las fichas lo tapan igual que a los controles. */
+.loc-sticky-map { right: 12px; bottom: 144px; z-index: 540; }
+@media (min-width: 900px) { .loc-sticky-map { bottom: 24px; } }
+.loc-sticky-mob { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+/* Cuerpo que se despliega desde el círculo: colapsado por defecto, crece al abrir */
+/* padding + margen negativo: deja lugar para que el glow del marcador no se recorte con overflow:hidden */
+.loc-body { display: flex; align-items: center; gap: 10px; padding: 14px 0 14px 14px; margin: -14px 0 -14px -14px; max-width: 0; opacity: 0; overflow: hidden; white-space: nowrap; visibility: hidden; transition: max-width .36s var(--ease-out), opacity .24s var(--ease-out); }
+.loc-mob-pill[data-open='true'] .loc-body { max-width: 74vw; opacity: 1; visibility: visible; }
+/* Desktop sin ubicación: halo de luz ámbar que barre la pill de izquierda a derecha */
+.loc-sweep {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(100deg, rgba(255,200,61,0) 30%, rgba(255,200,61,.34) 50%, rgba(255,200,61,0) 70%);
+  animation: cf-loc-sweep 2.4s var(--ease-in-out) infinite;
+}
+@keyframes cf-loc-sweep {
+  0% { transform: translateX(-100%); }
+  70%, 100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) { .loc-sweep { animation: none; opacity: 0; } }
+/* Anillo: deja visible solo el grosor del padding (borde/halo) y vacía el interior */
+.cf-ring-mask {
+  box-sizing: border-box; pointer-events: none;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+/* Ícono del modal de ubicación: encendido de tubo + parpadeo de neón periódico */
+.loc-neon-icon {
+  filter: drop-shadow(0 0 4px rgba(255,255,255,.95)) drop-shadow(0 0 11px rgba(255,255,255,.6));
+  animation: cf-neon-on 1.1s steps(1, end) both, cf-icon-flicker 4.5s linear 1.4s infinite;
+}
+@keyframes cf-icon-flicker {
+  0%, 82%, 100% { opacity: 1; filter: drop-shadow(0 0 4px rgba(255,255,255,.95)) drop-shadow(0 0 11px rgba(255,255,255,.6)); }
+  84% { opacity: 0.2; filter: none; }
+  86% { opacity: 1; filter: drop-shadow(0 0 4px rgba(255,255,255,.95)) drop-shadow(0 0 11px rgba(255,255,255,.6)); }
+  90% { opacity: 0.4; filter: none; }
+  93% { opacity: 1; filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 18px rgba(255,255,255,.85)); }
+}
+@media (prefers-reduced-motion: reduce) { .loc-neon-icon { animation: none; } }
+
 /* ───────── Base ───────── */
 html {
   color-scheme: dark;
@@ -334,7 +387,7 @@ html {
   scrollbar-gutter: stable; /* reserva siempre el canal del scrollbar vertical: así los elementos fixed (p. ej. el FAB del asistente) no "saltan" entre la landing (con scroll) y el mapa (sin scroll) */
   -webkit-tap-highlight-color: transparent; /* evita el recuadro celeste de WebKit al tocar en mobile */
   /* Al saltar a un ancla (#hero, #tiendas, …) se descuenta el alto del navbar sticky, así la sección no queda tapada; en el hero el salto cae en el tope real. */
-  scroll-padding-top: 96px;
+  scroll-padding-top: 84px;
 }
 @media (max-width: 899px) {
   html { scroll-padding-top: 72px; }
@@ -479,7 +532,7 @@ a:hover {
 @media (min-width: 900px) {
   .nav-search { display: flex; }
   /* Desktop: marca más grande, links alineados a la izquierda y buscador a continuación */
-  .lp-nav { justify-content: flex-start !important; gap: 36px !important; min-height: 88px !important; }
+  .lp-nav { justify-content: flex-start !important; gap: 36px !important; min-height: 60px !important; padding-top: 10px !important; padding-bottom: 10px !important; }
   .nav-left { margin-right: auto; }
   /* Landing: brand a la izquierda, links neon centrados en la barra, y a la derecha Ingresar + Mapa */
   .lp-nav.lp-nav-landing { justify-content: space-between !important; }
@@ -500,24 +553,41 @@ a:hover {
 .hero-city-wrap { position: relative; order: 4; }
 .hero-avatars { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 /* el contenido flota por encima de la escena y de la capa de avatares */
-.hero-brand, .hero-explore, .hero-location, .hero-cta, .hero-desc, .hero-search { position: relative; z-index: 2; }
+.hero-brand, .hero-explore, .hero-cta, .hero-desc, .hero-search { position: relative; z-index: 2; }
 .hero-head { display: flex; flex-direction: column; align-items: center; order: 1; }
 .lp-hero { align-items: center; text-align: center; }
-/* La marca es una grilla: fila 1 = canasta + "COMPRÁ FÁCIL"; fila 2 = chip de ciudad (centrado
-   bajo la canasta) + "EXPLORÁ TU CIUDAD" (centrado bajo el texto). justify-items:center centra
-   cada elemento dentro de SU columna. */
+/* La marca es una grilla: fila 1 = canasta + "COMPRÁ FÁCIL"; fila 2 = "EXPLORÁ TU CIUDAD" + íconos
+   neón, centrada bajo toda la marca. justify-items:center centra cada elemento dentro de su área. */
 .hero-brand {
   display: grid;
   grid-template-columns: auto auto;
-  grid-template-areas: "basket text" "chip explore";
+  grid-template-areas: "basket text" "explore explore";
   justify-content: center; justify-items: center; align-items: end;
   column-gap: clamp(12px, 2vw, 20px); row-gap: clamp(10px, 1.4vw, 18px);
 }
-.hero-basket { grid-area: basket; position: relative; }
-.hero-brand .hero-neon { grid-area: text; }
-/* chip y "EXPLORÁ TU CIUDAD" centrados verticalmente entre sí (la fila la marca el alto del chip) */
-.hero-location { grid-area: chip; display: flex; justify-content: center; align-self: center; }
-.hero-explore { grid-area: explore; justify-content: center; align-self: center; }
+/* canasta y "COMPRÁ FÁCIL" centrados verticalmente entre sí (mismo eje horizontal) */
+.hero-basket { grid-area: basket; position: relative; align-self: center; }
+/* el texto baja apenas respecto del centro de la canasta (compensa el peso visual de los rayos de arriba) */
+.hero-brand .hero-neon { grid-area: text; align-self: center; position: relative; top: clamp(6px, 0.9vw, 14px); }
+.hero-explore { grid-area: explore; display: flex; align-items: center; justify-content: center; gap: clamp(14px, 1.6vw, 22px); align-self: center; }
+.hero-explore-icons { display: flex; align-items: center; gap: clamp(12px, 1.2vw, 16px); }
+/* íconos de tiendas/servicios/emprendimientos/ofertas: tubo de neón que enciende y cada tanto parpadea
+   (duración y delay por ícono, inline, para que no parpadeen todos a la vez) */
+.hero-explore-icon {
+  display: inline-flex;
+  filter: drop-shadow(0 0 4px var(--c)) drop-shadow(0 0 12px var(--c));
+  animation-name: cf-tube-on, cf-hero-icon-flicker;
+  animation-timing-function: steps(1, end), linear;
+  animation-iteration-count: 1, infinite;
+  animation-fill-mode: both, none;
+}
+@keyframes cf-hero-icon-flicker {
+  0%, 82%, 100% { opacity: 1; filter: drop-shadow(0 0 4px var(--c)) drop-shadow(0 0 12px var(--c)); }
+  84% { opacity: 0.2; filter: none; }
+  86% { opacity: 1; filter: drop-shadow(0 0 4px var(--c)) drop-shadow(0 0 12px var(--c)); }
+  90% { opacity: 0.4; filter: none; }
+  93% { opacity: 1; filter: drop-shadow(0 0 6px var(--c)) drop-shadow(0 0 20px var(--c)); }
+}
 /* onda expansiva de glow que emana del basket en el pico de brillo */
 .hero-basket-wave {
   position: absolute; left: 50%; top: 54%; width: 115%; aspect-ratio: 1; z-index: 0;
@@ -560,18 +630,23 @@ a:hover {
 @media (min-width: 960px) {
   /* la section ocupa el alto visible bajo el nav; el cartel arriba y la consola abajo (sobre el horizonte) */
   #hero { z-index: 1; }
-  #hero .lp-hero { min-height: calc(100vh - 88px - 80px) !important; }
+  #hero .lp-hero { min-height: calc(100vh - 80px - 80px) !important; }
   .hero-head { margin-top: clamp(4px, 2vw, 28px); }
-  /* consola pegada a la parte más inferior; su ancho = el de la fila canasta + "COMPRÁ FÁCIL"
-     (medido en JS → --hero-brand-w), así el buscador y la descripción ocupan lo mismo que el logo */
-  .hero-cta { margin-top: auto; margin-bottom: clamp(6px, 1.5vh, 20px); width: min(var(--hero-brand-w, 640px), 100%); z-index: 3; }
+  /* consola pegada a la parte más inferior; su ancho sale del de la fila canasta + "COMPRÁ FÁCIL"
+     (medido en JS → --hero-brand-w) × 1.18: algo más ancha que el logo, para que la descripción entre en 2 líneas */
+  /* margin-bottom negativo: la consola baja dentro del padding inferior de la section (48px) hasta quedar a
+     24px del borde inferior de la pantalla, alineada por abajo con el sticky de ubicación (.loc-sticky-desk) */
+  .hero-cta { margin-top: auto; margin-bottom: -24px; width: min(calc(var(--hero-brand-w, 560px) * 1.18), 100%); z-index: 3; }
   .hero-desc { max-width: none !important; width: 100%; }
   .hero-search { max-width: none !important; width: 100%; }
-  /* ciudad panorámica: grande, centrada, sobresale ~25% por ambos lados y se ancla al fondo */
+  /* ciudad panorámica: bien grande, centrada, sobresale ~25% por ambos lados y baja por debajo del hero.
+     clip-path la corta justo en el borde inferior de la section (padding inferior = 48px) para que no
+     invada la sección siguiente; hacia arriba queda libre (los avatares pueden subir). */
   .hero-city-wrap {
     position: absolute !important; z-index: 0;
     left: -25vw; right: -25vw; width: auto;
-    top: auto; bottom: -6vh; height: min(72%, 660px);
+    top: auto; bottom: -24vh; height: min(96%, 900px);
+    clip-path: inset(-100vh 0 calc(24vh - 48px) 0);
   }
   .hero-city {
     width: 100%; height: 100%; max-width: none !important;
@@ -580,16 +655,17 @@ a:hover {
 }
 @media (max-width: 959px) {
   /* Orden en mobile: cartel (1) → buscador + descripción (2) → mapa (3) bien abajo. */
-  /* en mobile: la canasta + "COMPRÁ FÁCIL" arriba; debajo, la ciudad detectada y luego "EXPLORÁ TU CIUDAD" (apilados y centrados) */
-  .hero-brand { grid-template-areas: "basket text" "chip chip" "explore explore"; row-gap: clamp(8px, 2vw, 14px); }
-  /* el basket se sube con transform (no margin) para no agregar espacio hacia lo de abajo */
-  .hero-basket-img { margin-bottom: 0 !important; transform: translateY(clamp(-20px, -4vw, -10px)); }
+  /* en mobile: la canasta + "COMPRÁ FÁCIL" arriba; debajo, "EXPLORÁ TU CIUDAD" y, en otra fila del mismo
+     ancho que el texto, los íconos repartidos de izquierda a derecha */
+  .hero-brand { row-gap: clamp(8px, 2vw, 14px); }
+  .hero-explore { flex-direction: column; align-items: stretch; gap: 12px; width: fit-content; }
+  .hero-explore-icons { justify-content: space-between; gap: 0; }
   .hero-cta { order: 2; z-index: 3; margin-top: clamp(10px, 3vw, 18px); }
   .hero-desc { text-shadow: 0 1px 10px rgba(0, 0, 0, .5); max-width: 420px !important; }
   .hero-search { max-width: 460px !important; width: 100%; }
-  /* más aire entre el logo (canasta + "COMPRÁ FÁCIL") y la ciudad + "EXPLORÁ TU CIUDAD";
+  /* más aire entre el logo (canasta + "COMPRÁ FÁCIL") y "EXPLORÁ TU CIUDAD";
      ≈ el mismo espacio que hay entre "EXPLORÁ TU CIUDAD" y el buscador */
-  .hero-location { margin-top: clamp(24px, 5vw, 30px); }
+  .hero-explore { margin-top: clamp(24px, 5vw, 30px); }
   /* buscador: el botón queda cuadrado, solo con la lupa (sin texto "Buscar") */
   .hero-search-btn { width: 48px; padding-left: 0 !important; padding-right: 0 !important; }
   .hero-search-btn-label { display: none; }
@@ -659,6 +735,17 @@ a:hover {
     padding-top: 28px !important;
   }
   #hero.lp-sec { padding-top: 48px !important; }
+  /* Hero = alto exacto de la pantalla del celular: la escena va bien ampliada, se sale por los costados
+     y lo que sobra por abajo se recorta en el borde inferior de la section */
+  #hero.lp-sec { height: calc(100svh - 56px); overflow: clip; }
+  /* con el alto fijo, flex intentaría encoger el contenido para que entre: la escena debe conservar su
+     tamaño real y desbordar (si se encoge, el canvas 3D cambia de tamaño al montar y puede quedar en blanco) */
+  #hero .lp-hero, #hero .hero-city-wrap { flex: none; }
+  #hero .hero-city-wrap {
+    width: calc(100% + 2 * var(--gutter) + 70vw) !important;
+    margin-inline: calc(-1 * var(--gutter) - 35vw);
+    margin-top: clamp(8px, 4vw, 28px);
+  }
   .lp-sec > * { width: 100%; box-sizing: border-box; }
   #ofertas.lp-sec { justify-content: flex-start; }
   .lp-hero { min-height: 0 !important; }
@@ -746,7 +833,7 @@ a:hover {
   }
   .mp-panel[data-open='false'] .mp-list { display: none !important; }
   .mp-grip { display: none; }
-  .mp-ctrl { bottom: 24px !important; }
+  .mp-ctrl { bottom: calc(24px + var(--loc-lift, 0px)) !important; }
   .mp-sheet {
     left: auto !important;
     right: 72px !important;
@@ -787,5 +874,5 @@ a:hover {
   :root { --dur-drift: 0s; --stagger: 0ms; }
   .cf-neon-on { animation: none; }
   * { scroll-behavior: auto !important; }
-  .requested-art, .catalog-art, .offers-art, .hero-basket, .hero-basket-img, .hero-letter, .nav-tube-on, .nav-idle, .shop-fab { animation: none !important; }
+  .requested-art, .catalog-art, .offers-art, .hero-basket, .hero-basket-img, .hero-letter, .hero-explore-icon, .nav-tube-on, .nav-idle, .shop-fab { animation: none !important; }
 }

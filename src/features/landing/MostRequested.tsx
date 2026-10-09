@@ -5,7 +5,8 @@ import { ImageSlot } from '../../components/ui/ImageSlot'
 import { useHover } from '../../components/ui/useHover'
 import { REQUESTED } from '../../data/offers'
 import type { Requested } from '../../data/types'
-import { useNearby } from '../../lib/nearbyStore'
+import type { Geo } from '../../lib/nearbyStore'
+import { LocationGate } from '../location/LocationGate'
 import { OFFER_C } from './offerColors'
 import { SectionHead, SlideCarousel } from './shared'
 import type { OpenMap } from './shared'
@@ -34,7 +35,8 @@ function RequestedCard({ r }: { r: Requested }) {
   )
 }
 
-export function LandingMostRequested({ geo }: { onOpenMap: OpenMap; geo: ReturnType<typeof useNearby> }) {
+export function LandingMostRequested({ geo }: { onOpenMap: OpenMap; geo: Geo }) {
+  const { nearby } = geo
   return (
     <section id="mas-solicitados" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '56px 0' }}>
       <GlowBackdrop palette="servicio" intensity={0.3} />
@@ -43,16 +45,22 @@ export function LandingMostRequested({ geo }: { onOpenMap: OpenMap; geo: ReturnT
       </div>
       <div className="requested-body" style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ position: 'relative', maxWidth: 'var(--container)', margin: '0 auto' }}>
-          <SectionHead className="requested-head" title="MÁS SOLICITADOS" subtitle="Servicios y emprendimientos más demandados en:" city={geo.nearby?.city ?? 'Tunuyán'} />
+          <SectionHead className="requested-head" title="MÁS SOLICITADOS" subtitle="Servicios y emprendimientos más demandados cerca tuyo." city={nearby?.city} />
         </div>
-        <SlideCarousel items={REQUESTED} render={(r) => <RequestedCard r={r} />} />
-        <div className="requested-ribbon" aria-hidden="true">
-          <div className="catalog-ribbon-track">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <span key={i}>Próximamente ✦</span>
-            ))}
-          </div>
-        </div>
+        {!nearby ? (
+          <LocationGate noun="los servicios y emprendimientos más solicitados" />
+        ) : (
+          <>
+            <SlideCarousel items={REQUESTED} render={(r) => <RequestedCard r={r} />} />
+            <div className="requested-ribbon" aria-hidden="true">
+              <div className="catalog-ribbon-track">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <span key={i}>Próximamente ✦</span>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </section>
   )

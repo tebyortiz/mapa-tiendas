@@ -6,15 +6,17 @@ import { ShopAssistant, SHOP_ASSISTANT_ENABLED } from '../components/assistant/S
 import { Icon } from '../components/ui/Icon'
 import { IconButton } from '../components/ui/IconButton'
 import { Toast } from '../components/ui/Toast'
-import { BUSINESSES, LOCAL_BUSINESSES } from '../data/businesses'
+import { LOCAL_BUSINESSES } from '../data/businesses'
 import type { Business, CategoryKey, TypeKey } from '../data/types'
 import { LandingNav } from '../features/landing/Nav'
 import { MapView } from '../features/map/MapView'
-import { MAP_CENTER } from '../lib/mapbox'
+import { FALLBACK_CENTER } from '../lib/mapbox'
 import { DEFAULT_RADIUS, fetchNearby, fmtDistance, metersBetween, toBusiness } from '../lib/geoApi'
-import { loadNearby, locateAndFetch } from '../lib/nearbyStore'
+import { autoLocateIfGranted, getNearby, loadNearby, locateAndFetch, openLocationModal, useLocationStore } from '../lib/nearbyStore'
+import type { Nearby } from '../lib/nearbyStore'
 import { useEdgeFade } from '../lib/useEdgeFade'
-import { LocationModal } from '../features/map/LocationModal'
+import { LocationPermissionModal } from '../features/location/LocationPermissionModal'
+import { LocationStickyBar } from '../features/location/LocationStickyBar'
 import { MapControls } from '../features/map/MapControls'
 import { MapTopBar } from '../features/map/MapTopBar'
 import { OffersStrip } from '../features/map/OffersStrip'
@@ -43,18 +45,19 @@ export default function MapPage() {
   const [toast, setToast] = useState<string | null>(null)
   const mapRef = useRef<MapRef | null>(null)
   const cached = useState(loadNearby)[0]
-  // Si todavía no hay ubicación, al entrar al mapa se muestra el modal que pide el permiso.
-  // Excepción: si llegamos con una búsqueda de producto en la URL, la ubicación la pide esa búsqueda
-  // (así no se superponen el modal y el prompt del navegador).
-  const [askLoc, setAskLoc] = useState(!cached && initialQ.trim().length < 2)
-  const [locLoading, setLocLoading] = useState(false)
-  const [locError, setLocError] = useState<string | null>(null)
+  // Store global de ubicación: el modal de permisos vive acá (compartido con la landing).
+  const { nearby, modalOpen } = useLocationStore()
+  // Marca si el estado del mapa ya refleja una ubicación real (caché inicial o detectada).
+  const seededRef = useRef(!!cached)
+  // Espejo de la última posición volcada al mapa: distingue una re-detección real (el usuario tocó
+  // "Nueva ubicación" y se movió) de la siembra inicial o de la revalidación en segundo plano.
+  const appliedPosRef = useRef<{ lat: number; lng: number } | null>(cached?.pos ?? null)
   const [apiBiz, setApiBiz] = useState<Business[] | null>(cached?.businesses ?? null)
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number }>(cached?.pos ?? MAP_CENTER)
+  const [userPos, setUserPos] = useState<{ lat: number; lng: number }>(cached?.pos ?? FALLBACK_CENTER)
   // Centro del último POST (donde se obtuvieron las sucursales) y centro actual del mapa.
   // Cuando el mapa se aleja del centro de búsqueda hacia el borde del radio, se ofrece "Explorar aquí".
-  const [searchCenter, setSearchCenter] = useState<{ lat: number; lng: number }>(cached?.pos ?? MAP_CENTER)
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(cached?.pos ?? MAP_CENTER)
+  const [searchCenter, setSearchCenter] = useState<{ lat: number; lng: number }>(cached?.pos ?? FALLBACK_CENTER)
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(cached?.pos ?? FALLBACK_CENTER)
   const [exploring, setExploring] = useState(false)
   // Espejo del centro de búsqueda: deja que refresh() (un listener estable, sin deps) lea el
   // valor actual sin re-suscribirse ni re-ejecutarse en cada exploración.
@@ -70,7 +73,9 @@ export default function MapPage() {
   // Se filtran a los que caen dentro del radio del centro de búsqueda actual (y su distancia es
   // relativa a ese centro), así al explorar otra zona no quedan pegados los del área anterior.
   const businesses = useMemo(() => {
-    if (!apiBiz) return BUSINESSES
+    if (!apiBiz) return []
+    // Servicios/emprendimientos de ejemplo (el backend aún no los devuelve): solo se suman si
+    // caen dentro del radio del centro de búsqueda, así nunca aparecen lejos de la zona real.
     const locals = LOCAL_BUSINESSES
       .map((b) => ({ b, d: metersBetween(searchCenter, b) }))
       .filter(({ d }) => d <= DEFAULT_RADIUS)
@@ -78,26 +83,15 @@ export default function MapPage() {
     return [...apiBiz, ...locals]
   }, [apiBiz, searchCenter])
 
-  const allowLocation = async () => {
-    setLocLoading(true)
-    setLocError(null)
-    try {
-      const n = await locateAndFetch()
-      setApiBiz(n.businesses)
-      setUserPos(n.pos)
-      setSearchCenter(n.pos)
-      setMapCenter(n.pos)
-      setSel(null)
-      mapRef.current?.flyTo({ center: [n.pos.lng, n.pos.lat], zoom: 15 })
-      setAskLoc(false)
-    } catch (e) {
-      console.error('[geo] error', e)
-      setLocError(e instanceof GeolocationPositionError ? 'No pudimos obtener tu ubicación. Revisá los permisos del navegador.' : 'No pudimos cargar los comercios cercanos. Probá de nuevo.')
-      setAskLoc(true)
-    } finally {
-      setLocLoading(false)
-    }
-  }
+  // Vuelca una ubicación detectada (o cacheada) al estado del mapa y encuadra la vista.
+  const applyLocated = useCallback((n: Nearby) => {
+    setApiBiz(n.businesses)
+    setUserPos(n.pos)
+    setSearchCenter(n.pos)
+    setMapCenter(n.pos)
+    setSel(null)
+    mapRef.current?.flyTo({ center: [n.pos.lng, n.pos.lat], zoom: 15 })
+  }, [])
 
   // Revalidación en segundo plano: vuelve a hacer el POST para traer sucursales recién
   // creadas, sin bloquear la UI ni volver a pedir permiso. Solo corre si la ubicación ya
@@ -145,12 +139,12 @@ export default function MapPage() {
 
   // El botón aparece cuando el mapa se aleja del centro de búsqueda lo suficiente como para
   // asomar el borde del círculo (≈60% del radio), estando en modo normal y con ubicación lista.
-  const canExplore = !productMode && !askLoc && !!apiBiz && searchPhase === 'idle' && metersBetween(searchCenter, mapCenter) > DEFAULT_RADIUS * 0.6
+  const canExplore = !productMode && !modalOpen && !!apiBiz && searchPhase === 'idle' && metersBetween(searchCenter, mapCenter) > DEFAULT_RADIUS * 0.6
 
   // Búsqueda de productos desde cualquier buscador del mapa (navbar y drawer de mobile). Usa el
   // mismo endpoint que el asistente de compra: si hay resultados, el store hace que el mapa pase a
   // "modo producto"; si no, se limpia lo anterior y se muestra el aviso correspondiente.
-  const runSearch = useCallback(async (raw: string) => {
+  const runSearch = useCallback(async (raw: string, center?: { lat: number; lng: number }) => {
     const q = raw.trim()
     setTerm(q)
     setSelPin(null)
@@ -160,7 +154,7 @@ export default function MapPage() {
       return
     }
     setSearchPhase('loading')
-    const status = await runProductSearch(q, searchCenter)
+    const status = await runProductSearch(q, center ?? searchCenter)
     if (status === 'ok') {
       setSearchPhase('idle')
     } else {
@@ -169,12 +163,41 @@ export default function MapPage() {
     }
   }, [searchCenter])
 
-  // Al entrar al mapa con una búsqueda en la URL (desde el hero o el drawer de la landing), se
-  // ejecuta la búsqueda de productos una sola vez.
+  // Entrada al mapa:
+  // - Con ubicación cacheada: se muestra al instante y, si vino una búsqueda en la URL, se ejecuta.
+  // - Sin ubicación: se intenta geolocalizar en silencio (si ya hay permiso); si no, se abre el
+  //   modal de permisos. La búsqueda de la URL (si la hay) se corre al detectar la ubicación.
   useEffect(() => {
-    if (initialQ.trim().length >= 2) void runSearch(initialQ)
+    if (cached) {
+      if (initialQ.trim().length >= 2) void runSearch(initialQ)
+      return
+    }
+    void (async () => {
+      await autoLocateIfGranted()
+      if (!getNearby()) openLocationModal()
+    })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Cambios de ubicación en el store (detección silenciosa, modal o "Nueva ubicación" del sticky):
+  // - Primera vez (aún sin sembrar): vuelca la ubicación al mapa y corre la búsqueda pendiente de la URL.
+  // - Ya sembrado y la posición cambió de verdad: re-centra y refresca la zona nueva (el usuario se movió
+  //   y actualizó su ubicación). Una re-detección casi en el mismo punto (<30 m) no mueve nada.
+  useEffect(() => {
+    if (!nearby) return
+    if (!seededRef.current) {
+      seededRef.current = true
+      appliedPosRef.current = nearby.pos
+      applyLocated(nearby)
+      if (initialQ.trim().length >= 2) void runSearch(initialQ, nearby.pos)
+      return
+    }
+    const prev = appliedPosRef.current
+    if (prev && metersBetween(prev, nearby.pos) < 30) return
+    appliedPosRef.current = nearby.pos
+    applyLocated(nearby)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nearby])
 
   useEffect(() => {
     const f = () => {
@@ -246,6 +269,11 @@ export default function MapPage() {
     if (!desk) setExp(false)
   }
   const locate = () => {
+    // Si todavía no hay ubicación, el botón "Mi ubicación" vuelve a abrir el modal de permisos.
+    if (!apiBiz && !productMode) {
+      openLocationModal()
+      return
+    }
     const p = productMode ? ps.userPos : userPos
     mapRef.current?.flyTo({ center: [p.lng, p.lat], zoom: 15 })
     setToast('Te encontramos')
@@ -361,7 +389,8 @@ export default function MapPage() {
             <Toast icon="locate-fixed" tone="success">{toast}</Toast>
           </div>
         )}
-        {askLoc && !productMode && <LocationModal loading={locLoading} error={locError} onAllow={allowLocation} onSkip={() => setAskLoc(false)} />}
+        <LocationPermissionModal />
+        <LocationStickyBar variant="map" />
         {selHit && (
           <div ref={psFade.ref} className="mp-sheet mp-sheet-product" style={{ position: 'absolute', zIndex: 650, left: 8, right: 8, bottom: 8, maxHeight: '82%', overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'cf-rise var(--dur-slow) var(--ease-out)', ...psFade.style }}>
             <ProductResultSheet hit={selHit} onClose={() => setSelPin(null)} />

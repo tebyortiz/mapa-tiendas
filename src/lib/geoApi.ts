@@ -160,11 +160,12 @@ export function toBusiness(r: ApiResult, i: number): Business {
   }
 }
 
-/** Pide la ubicación al navegador. */
+/** Pide la ubicación al navegador. maximumAge acepta un fix reciente (clave en mobile, donde
+ *  el GPS puede tardar) y timeout da margen suficiente antes de fallar. */
 export const getPosition = () =>
   new Promise<GeolocationPosition>((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error('Tu navegador no soporta geolocalización'))
-    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 10000 })
+    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 })
   })
 
 /** Distancia en metros entre dos coordenadas (haversine). */

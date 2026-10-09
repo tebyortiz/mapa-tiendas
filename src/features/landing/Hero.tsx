@@ -2,8 +2,8 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import type { FormEvent, PointerEvent } from 'react'
 import { Button } from '../../components/ui/Button'
 import { ErrorBoundary } from '../../components/ui/ErrorBoundary'
+import { Icon } from '../../components/ui/Icon'
 import { SearchInput, SEARCH_SUGGESTIONS } from '../../components/ui/SearchInput'
-import { LocationRow } from './shared'
 import type { ProductImage } from './city/cityConfig'
 
 // [duración, delay] de las letras que parpadean, por posición (seed + índice)
@@ -23,6 +23,14 @@ function FlickerWord({ text, seed }: { text: string; seed: number }) {
     </span>
   )
 }
+
+// Íconos junto a "EXPLORÁ TU CIUDAD" (mismos que el navbar): [ícono, color, rótulo, duración y delay del parpadeo]
+const EXPLORE_ICONS: [string, string, string, number, number][] = [
+  ['shopping-bag', 'var(--tienda)', 'Tiendas', 7.5, 1.6],
+  ['wrench', 'var(--servicio)', 'Servicios', 9, 3.1],
+  ['sparkles', 'var(--emprendimiento)', 'Emprendimientos', 6.5, 4.4],
+  ['badge-percent', '#fff', 'Ofertas', 8.2, 2.3],
+]
 
 const HeroCity3D = lazy(() => import('./city/HeroCity3D'))
 
@@ -104,7 +112,7 @@ function HeroCity() {
   )
 }
 
-export function LandingHero({ onOpenMap, onSearch, city }: { onOpenMap: () => void; onSearch?: (q: string) => void; city?: string }) {
+export function LandingHero({ onOpenMap, onSearch }: { onOpenMap: () => void; onSearch?: (q: string) => void }) {
   const [q, setQ] = useState('')
   // Ancho real de la fila de marca (canasta + "COMPRÁ FÁCIL"); en desktop se usa como ancho del
   // buscador y de la descripción, para que ocupen exactamente lo mismo que el logo.
@@ -145,24 +153,28 @@ export function LandingHero({ onOpenMap, onSearch, city }: { onOpenMap: () => vo
       </div>
       <div className="lp-hero" style={{ position: 'relative', zIndex: 1, maxWidth: 'var(--container)', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 24, minHeight: 'min(760px,calc(100vh - 140px))', ['--hero-brand-w' as string]: brandW ? `${brandW}px` : undefined }}>
         <div className="hero-head">
-          {/* Grilla de marca: canasta + "COMPRÁ FÁCIL" arriba; chip de ciudad (bajo la canasta) +
-              "EXPLORÁ TU CIUDAD" (bajo el texto) debajo. La disposición exacta la controla el CSS. */}
+          {/* Grilla de marca: canasta + "COMPRÁ FÁCIL" arriba; debajo "EXPLORÁ TU CIUDAD" + íconos neón
+              (al costado en desktop, en una fila del mismo ancho debajo en mobile). La disposición la controla el CSS. */}
           <div ref={brandRef} className="hero-brand">
             <div className="hero-basket">
               {/* onda expansiva de glow sincronizada con el destello del basket */}
               <span className="hero-basket-wave" aria-hidden="true" />
-              <img src="/assets/logo/basket-mark.png" alt="" className="hero-basket-img" style={{ display: 'block', height: 'clamp(110px,19vw,240px)', width: 'auto', marginBottom: 'clamp(10px,2vw,26px)' }} />
+              <img src="/assets/logo/basket-mark.png" alt="" className="hero-basket-img" style={{ display: 'block', height: 'clamp(110px,16vw,200px)', width: 'auto' }} />
             </div>
-            <h1 className="cf-neon cf-neon-on hero-neon" aria-label="Comprá Fácil" style={{ margin: 0, fontSize: 'clamp(44px,7vw,100px)', lineHeight: 0.95, whiteSpace: 'nowrap' }}>
+            <h1 className="cf-neon cf-neon-on hero-neon" aria-label="Comprá Fácil" style={{ margin: 0, fontSize: 'clamp(44px,6vw,86px)', lineHeight: 0.95, whiteSpace: 'nowrap' }}>
               <FlickerWord text="COMPRÁ" seed={0} />
               <br />
               <FlickerWord text="FÁCIL" seed={6} />
             </h1>
-            <div className="hero-location">
-              <LocationRow city={city ?? 'Tunuyán'} />
-            </div>
-            <div className="hero-explore" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ font: '800 clamp(18px,2.4vw,26px)/1.2 var(--font-body)', letterSpacing: '.12em', textTransform: 'uppercase', color: '#fff', textShadow: 'var(--neon-text-soft)' }}>EXPLORÁ TU CIUDAD</div>
+            <div className="hero-explore">
+              <div style={{ font: '800 clamp(18px,2.4vw,26px)/1.2 var(--font-body)', letterSpacing: '.12em', textTransform: 'uppercase', color: '#fff', textShadow: 'var(--neon-text-soft)', whiteSpace: 'nowrap' }}>EXPLORÁ TU CIUDAD</div>
+              <div className="hero-explore-icons">
+                {EXPLORE_ICONS.map(([icon, c, label, dur, delay], i) => (
+                  <span key={icon} className="hero-explore-icon" style={{ ['--c' as string]: c, animationDuration: `0.9s, ${dur}s`, animationDelay: `${i * 220 + 500}ms, ${delay}s` }}>
+                    <Icon name={icon} size={26} color={c} label={label} />
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
