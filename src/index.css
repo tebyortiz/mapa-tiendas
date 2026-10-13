@@ -341,7 +341,11 @@
 .loc-sticky-desk { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); right: var(--gutter); }
 /* Mapa: va entre el zoom (+, −), que sube --loc-lift para dejarle el hueco, y el botón "Mi ubicación" (52px debajo).
    Mismo z-index que .mp-ctrl: así el panel de sucursales y las fichas lo tapan igual que a los controles. */
-.loc-sticky-map { right: 12px; bottom: 196px; z-index: 540; }
+/* absolute (no fixed): se ancla al contenedor del mapa, igual que .mp-ctrl. Con fixed se anclaba a la pantalla
+   visible y, en celulares (barra de URL), quedaba desfasado del resto de la columna y se superponía. */
+.loc-sticky-map { position: absolute; right: 12px; bottom: 196px; z-index: 540; }
+/* Página del mapa: alto de la pantalla realmente visible (dvh descuenta la barra de URL del celular). */
+.mp-root { height: 100vh; height: 100dvh; }
 @media (min-width: 900px) { .loc-sticky-map { bottom: 76px; } }
 .loc-sticky-mob { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 /* Cuerpo que se despliega desde el círculo: colapsado por defecto, crece al abrir */
