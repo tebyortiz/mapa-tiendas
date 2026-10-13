@@ -275,7 +275,7 @@ export default function MapPage() {
   }
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div className="mp-root" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <LandingNav base="/" sticky={false} cta={false} search={{ query: term, onSearch: runSearch }} />
       <div data-type={type === 'todas' ? undefined : type} style={{ position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' }}>
         {viewPos ? (
