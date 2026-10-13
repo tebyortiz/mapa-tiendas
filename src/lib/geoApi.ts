@@ -72,15 +72,41 @@ export async function fetchNearby(latitude: number, longitude: number, radius = 
 export const API_ID_BASE = 10001
 
 export const fmtDistance = (m: number) => (m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1).replace('.', ',')} km`)
-const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+const AR_TZ = 'America/Argentina/Buenos_Aires'
+const DAY = 24 * 60 * 60 * 1000
+const AR_OFFSET = 3 * 60 * 60 * 1000 // Argentina es UTC-3 todo el año
+const fmtDate = (ms: number) => new Date(ms).toLocaleDateString('es-AR', { day: 'numeric', month: 'long', timeZone: AR_TZ })
 
-const toDeal = (o: ApiOffer): Deal => ({
-  name: o.name,
-  description: o.description,
-  until: fmtDate(o.endDate),
-  image: o.image,
-  products: o.products.map((p) => ({ name: p.name, discount: `-${p.discount}%`, image: p.image })),
-})
+/**
+ * Instante en que vence una oferta. Las ofertas valen hasta el último día inclusive (23:59 de Argentina),
+ * pero cada origen lo informa distinto: ttv manda solo el día ("2026-10-14T00:00:00.000Z") y gesto el
+ * instante exacto ("2026-11-01T02:59:59.000Z" = 31/10 23:59:59 en Argentina).
+ */
+const offerEnd = (iso: string): number | undefined => {
+  const t = new Date(iso).getTime()
+  if (Number.isNaN(t)) return undefined
+  return t % DAY === 0 ? t + DAY + AR_OFFSET : t
+}
+
+const toDeal = (o: ApiOffer): Deal => {
+  const endsAt = offerEnd(o.endDate)
+  return {
+    name: o.name,
+    description: o.description,
+    // Un segundo antes del vencimiento cae siempre dentro del último día vigente en Argentina.
+    until: endsAt ? fmtDate(endsAt - 1000) : '',
+    endsAt,
+    image: o.image,
+    products: o.products.map((p) => ({ name: p.name, discount: `-${p.discount}%`, image: p.image })),
+  }
+}
+
+/** Quita las ofertas ya vencidas. Se aplica al mostrar (no solo al cargar) porque los datos quedan en caché. */
+export const liveBusinesses = (list: Business[], now = Date.now()): Business[] =>
+  list.map((b) => {
+    const deals = b.deals.filter((d) => !d.endsAt || d.endsAt > now)
+    return deals.length === b.deals.length ? b : { ...b, deals, hasOffers: deals.length > 0 }
+  })
 
 const FALLBACK_PHOTO = '/assets/photos/carr-tienda01.jpg'
 

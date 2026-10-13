@@ -6,15 +6,15 @@ import { ShopAssistant, SHOP_ASSISTANT_ENABLED } from '../components/assistant/S
 import { Icon } from '../components/ui/Icon'
 import { IconButton } from '../components/ui/IconButton'
 import { Toast } from '../components/ui/Toast'
-import { LOCAL_BUSINESSES } from '../data/businesses'
 import type { Business, CategoryKey, TypeKey } from '../data/types'
 import { LandingNav } from '../features/landing/Nav'
 import { MapView } from '../features/map/MapView'
-import { FALLBACK_CENTER } from '../lib/mapbox'
-import { DEFAULT_RADIUS, fetchNearby, fmtDistance, metersBetween, toBusiness } from '../lib/geoApi'
+import { DEFAULT_RADIUS, fetchNearby, liveBusinesses, metersBetween, toBusiness } from '../lib/geoApi'
 import { autoLocateIfGranted, getNearby, loadNearby, locateAndFetch, openLocationModal, useLocationStore } from '../lib/nearbyStore'
 import type { Nearby } from '../lib/nearbyStore'
 import { useEdgeFade } from '../lib/useEdgeFade'
+import { useMinute } from '../lib/useMinute'
+import { LocationGate } from '../features/location/LocationGate'
 import { LocationPermissionModal } from '../features/location/LocationPermissionModal'
 import { LocationStickyBar } from '../features/location/LocationStickyBar'
 import { MapControls } from '../features/map/MapControls'
@@ -23,6 +23,8 @@ import { OffersStrip } from '../features/map/OffersStrip'
 import { ProductResultSheet } from '../features/map/ProductResultSheet'
 import { ResultsPanel } from '../features/map/ResultsPanel'
 import { clearProductSearch, runProductSearch, useProductSearch } from '../lib/productSearch'
+
+type LatLng = { lat: number; lng: number }
 
 const TYPES: TypeKey[] = ['tienda', 'servicio', 'emprendimiento']
 const mq = window.matchMedia('(min-width:900px)')
@@ -49,15 +51,16 @@ export default function MapPage() {
   const { nearby, modalOpen } = useLocationStore()
   // Marca si el estado del mapa ya refleja una ubicación real (caché inicial o detectada).
   const seededRef = useRef(!!cached)
-  // Espejo de la última posición volcada al mapa: distingue una re-detección real (el usuario tocó
-  // "Nueva ubicación" y se movió) de la siembra inicial o de la revalidación en segundo plano.
-  const appliedPosRef = useRef<{ lat: number; lng: number } | null>(cached?.pos ?? null)
+  // Última detección ya volcada al mapa: evita re-aplicar la caché inicial al montar (pisaría la
+  // ficha pedida por URL). Cualquier detección nueva del store sí se aplica siempre.
+  const appliedRef = useRef<Nearby | null>(cached ? getNearby() : null)
   const [apiBiz, setApiBiz] = useState<Business[] | null>(cached?.businesses ?? null)
-  const [userPos, setUserPos] = useState<{ lat: number; lng: number }>(cached?.pos ?? FALLBACK_CENTER)
+  // Sin ubicación real no hay posición (null): el mapa no se monta con ningún centro por defecto.
+  const [userPos, setUserPos] = useState<LatLng | null>(cached?.pos ?? null)
   // Centro del último POST (donde se obtuvieron las sucursales) y centro actual del mapa.
   // Cuando el mapa se aleja del centro de búsqueda hacia el borde del radio, se ofrece "Explorar aquí".
-  const [searchCenter, setSearchCenter] = useState<{ lat: number; lng: number }>(cached?.pos ?? FALLBACK_CENTER)
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>(cached?.pos ?? FALLBACK_CENTER)
+  const [searchCenter, setSearchCenter] = useState<LatLng | null>(cached?.pos ?? null)
+  const [mapCenter, setMapCenter] = useState<LatLng | null>(cached?.pos ?? null)
   const [exploring, setExploring] = useState(false)
   // Espejo del centro de búsqueda: deja que refresh() (un listener estable, sin deps) lea el
   // valor actual sin re-suscribirse ni re-ejecutarse en cada exploración.
@@ -69,19 +72,9 @@ export default function MapPage() {
   const [selPin, setSelPin] = useState<string | null>(null)
   const selHit = productMode ? ps.hits.find((h) => h.pinId === selPin) ?? null : null
 
-  // Con datos del backend (solo tiendas) se suman los servicios y emprendimientos de ejemplo.
-  // Se filtran a los que caen dentro del radio del centro de búsqueda actual (y su distancia es
-  // relativa a ese centro), así al explorar otra zona no quedan pegados los del área anterior.
-  const businesses = useMemo(() => {
-    if (!apiBiz) return []
-    // Servicios/emprendimientos de ejemplo (el backend aún no los devuelve): solo se suman si
-    // caen dentro del radio del centro de búsqueda, así nunca aparecen lejos de la zona real.
-    const locals = LOCAL_BUSINESSES
-      .map((b) => ({ b, d: metersBetween(searchCenter, b) }))
-      .filter(({ d }) => d <= DEFAULT_RADIUS)
-      .map(({ b, d }) => ({ ...b, distance: fmtDistance(d) }))
-    return [...apiBiz, ...locals]
-  }, [apiBiz, searchCenter])
+  // Solo se muestra lo que devuelve el backend para la zona consultada, sin las ofertas ya vencidas.
+  const now = useMinute()
+  const businesses = useMemo(() => liveBusinesses(apiBiz ?? [], now), [apiBiz, now])
 
   // Vuelca una ubicación detectada (o cacheada) al estado del mapa y encuadra la vista.
   const applyLocated = useCallback((n: Nearby) => {
@@ -106,7 +99,8 @@ export default function MapPage() {
       // sigue mirando su propia ubicación. Si se fue a explorar otra zona, dejamos esos
       // resultados intactos: así, al volver de abrir una web externa (que dispara
       // visibilitychange), el mapa y la ficha abierta no saltan a la zona del GPS.
-      if (metersBetween(searchCenterRef.current, n.pos) < 50) {
+      const sc = searchCenterRef.current
+      if (!sc || metersBetween(sc, n.pos) < 50) {
         setApiBiz(n.businesses)
         setSearchCenter(n.pos)
       }
@@ -121,6 +115,7 @@ export default function MapPage() {
   const exploreHere = useCallback(async () => {
     const c = mapRef.current?.getCenter()
     const center = c ? { lat: c.lat, lng: c.lng } : mapCenter
+    if (!center) return
     setExploring(true)
     try {
       const results = await fetchNearby(center.lat, center.lng)
@@ -139,7 +134,7 @@ export default function MapPage() {
 
   // El botón aparece cuando el mapa se aleja del centro de búsqueda lo suficiente como para
   // asomar el borde del círculo (≈60% del radio), estando en modo normal y con ubicación lista.
-  const canExplore = !productMode && !modalOpen && !!apiBiz && searchPhase === 'idle' && metersBetween(searchCenter, mapCenter) > DEFAULT_RADIUS * 0.6
+  const canExplore = !productMode && !modalOpen && !!apiBiz && searchPhase === 'idle' && !!searchCenter && !!mapCenter && metersBetween(searchCenter, mapCenter) > DEFAULT_RADIUS * 0.6
 
   // Búsqueda de productos desde cualquier buscador del mapa (navbar y drawer de mobile). Usa el
   // mismo endpoint que el asistente de compra: si hay resultados, el store hace que el mapa pase a
@@ -154,7 +149,7 @@ export default function MapPage() {
       return
     }
     setSearchPhase('loading')
-    const status = await runProductSearch(q, center ?? searchCenter)
+    const status = await runProductSearch(q, center ?? searchCenter ?? undefined)
     if (status === 'ok') {
       setSearchPhase('idle')
     } else {
@@ -179,22 +174,19 @@ export default function MapPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Cambios de ubicación en el store (detección silenciosa, modal o "Nueva ubicación" del sticky):
+  // Detección nueva en el store (silenciosa al entrar, o "Explorar mi cuadra" del modal):
   // - Primera vez (aún sin sembrar): vuelca la ubicación al mapa y corre la búsqueda pendiente de la URL.
-  // - Ya sembrado y la posición cambió de verdad: re-centra y refresca la zona nueva (el usuario se movió
-  //   y actualizó su ubicación). Una re-detección casi en el mismo punto (<30 m) no mueve nada.
+  // - Ya sembrado: el usuario pidió re-detectar, así que el mapa siempre vuelve a su ubicación real y
+  //   muestra esa zona, aunque no se haya movido (pudo haber explorado otra zona o arrastrado el mapa).
   useEffect(() => {
-    if (!nearby) return
+    if (!nearby || nearby === appliedRef.current) return
+    appliedRef.current = nearby
     if (!seededRef.current) {
       seededRef.current = true
-      appliedPosRef.current = nearby.pos
       applyLocated(nearby)
       if (initialQ.trim().length >= 2) void runSearch(initialQ, nearby.pos)
       return
     }
-    const prev = appliedPosRef.current
-    if (prev && metersBetween(prev, nearby.pos) < 30) return
-    appliedPosRef.current = nearby.pos
     applyLocated(nearby)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nearby])
@@ -268,13 +260,15 @@ export default function MapPage() {
     setSel(id)
     if (!desk) setExp(false)
   }
+  // Posición que centra el mapa: la de la búsqueda de productos o la real del usuario.
+  const viewPos = productMode ? ps.userPos : userPos
   const locate = () => {
     // Si todavía no hay ubicación, el botón "Mi ubicación" vuelve a abrir el modal de permisos.
-    if (!apiBiz && !productMode) {
+    if (!viewPos) {
       openLocationModal()
       return
     }
-    const p = productMode ? ps.userPos : userPos
+    const p = viewPos
     mapRef.current?.flyTo({ center: [p.lng, p.lat], zoom: 15 })
     setToast('Te encontramos')
     setTimeout(() => setToast(null), 2600)
@@ -284,19 +278,26 @@ export default function MapPage() {
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       <LandingNav base="/" sticky={false} cta={false} search={{ query: term, onSearch: runSearch }} />
       <div data-type={type === 'todas' ? undefined : type} style={{ position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <MapView
-          items={productMode ? [] : items}
-          selectedId={sel}
-          onSelect={pick}
-          mapRef={mapRef}
-          userPos={productMode ? ps.userPos : userPos}
-          productHits={productMode ? ps.hits : undefined}
-          selectedPinId={selPin}
-          onSelectPin={setSelPin}
-          searchCenter={productMode ? undefined : searchCenter}
-          searchRadius={DEFAULT_RADIUS}
-          onMoveEnd={setMapCenter}
-        />
+        {viewPos ? (
+          <MapView
+            items={productMode ? [] : items}
+            selectedId={sel}
+            onSelect={pick}
+            mapRef={mapRef}
+            userPos={viewPos}
+            productHits={productMode ? ps.hits : undefined}
+            selectedPinId={selPin}
+            onSelectPin={setSelPin}
+            searchCenter={productMode ? undefined : searchCenter ?? undefined}
+            searchRadius={DEFAULT_RADIUS}
+            onMoveEnd={setMapCenter}
+          />
+        ) : (
+          // Sin ubicación real no se dibuja ningún mapa: se invita a detectarla.
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '100%' }}><LocationGate noun="los comercios" /></div>
+          </div>
+        )}
         {!productMode && searchPhase === 'idle' && <MapTopBar present={present} type={type} setType={setType} cat={cat} setCat={setCat} picked={picked} onPick={() => setPicked(true)} />}
         <MapControls onZoomIn={() => mapRef.current?.zoomIn()} onZoomOut={() => mapRef.current?.zoomOut()} onLocate={locate} />
         {(canExplore || exploring) && (
@@ -351,7 +352,7 @@ export default function MapPage() {
               {searchPhase === 'loading' ? (
                 <>
                   <span aria-hidden="true" style={{ width: 18, height: 18, flex: 'none', borderRadius: 999, border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', display: 'inline-block', animation: 'cf-spin .7s linear infinite' }} />
-                  <div style={{ minWidth: 0, flex: 1, font: '600 13px/1.3 var(--font-body)', color: 'var(--text-body)' }}>
+                  <div style={{ minWidth: 0, flex: 1, font: '500 16px/1.3 var(--font-body)', color: 'var(--text-body)' }}>
                     Buscando “{term}” cerca tuyo…
                   </div>
                 </>
@@ -360,24 +361,24 @@ export default function MapPage() {
                   <span style={{ ...badge, background: empty ? 'rgba(255,200,61,.16)' : 'rgba(255,90,110,.16)', boxShadow: `inset 0 0 0 1px ${empty ? 'rgba(255,200,61,.5)' : 'rgba(255,90,110,.5)'}` }}>
                     <Icon name={searchPhase === 'need-location' ? 'map-pin' : empty ? 'search' : 'zap'} size={17} color={empty ? 'var(--cf-amber)' : 'var(--cf-danger)'} />
                   </span>
-                  <div style={{ minWidth: 0, flex: 1, font: '600 13px/1.3 var(--font-body)', color: 'var(--text-body)' }}>
+                  <div style={{ minWidth: 0, flex: 1, font: '500 16px/1.3 var(--font-body)', color: 'var(--text-body)' }}>
                     {empty
                       ? <>No encontré <b style={{ color: '#fff' }}>“{term}”</b> cerca tuyo. Probá con otro nombre.</>
                       : searchPhase === 'need-location'
                         ? 'Necesito tu ubicación para buscar productos cerca tuyo. Activá los permisos y probá otra vez.'
                         : 'Hubo un problema al buscar. Probá de nuevo en un momento.'}
                   </div>
-                  <IconButton icon="x" label="Cerrar aviso de búsqueda" variant="ghost" size={36} onClick={() => setSearchPhase('idle')} />
+                  <IconButton icon="x" label="Cerrar aviso de búsqueda" variant="ghost" size={36} style={{ flex: 'none', background: 'rgba(255,255,255,.1)' }} onClick={() => setSearchPhase('idle')} />
                 </>
               ) : ps ? (
                 <>
                   <span style={{ ...badge, background: 'var(--rainbow-grad)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.3)' }}>
                     <Icon name="store" size={17} color="#fff" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.35))' }} />
                   </span>
-                  <div style={{ minWidth: 0, flex: 1, font: '600 13px/1.3 var(--font-body)', color: 'var(--text-body)' }}>
+                  <div style={{ minWidth: 0, flex: 1, font: '500 16px/1.3 var(--font-body)', color: 'var(--text-body)' }}>
                     <b style={{ color: 'var(--cf-amber)', fontWeight: 800 }}>{ps.hits.length}</b> {ps.hits.length === 1 ? 'tienda' : 'tiendas'} con <b style={{ color: '#fff' }}>“{ps.query}”</b> cerca tuyo
                   </div>
-                  <IconButton icon="x" label="Cerrar resultados de búsqueda" variant="ghost" size={36} onClick={() => { setSelPin(null); clearProductSearch() }} />
+                  <IconButton icon="x" label="Cerrar resultados de búsqueda" variant="ghost" size={36} style={{ flex: 'none', background: 'rgba(255,255,255,.1)' }} onClick={() => { setSelPin(null); clearProductSearch() }} />
                 </>
               ) : null}
             </div>
@@ -409,7 +410,7 @@ export default function MapPage() {
             <OffersStrip b={s} />
           </div>
         )}
-        {SHOP_ASSISTANT_ENABLED && <ShopAssistant center={searchCenter} />}
+        {SHOP_ASSISTANT_ENABLED && <ShopAssistant center={searchCenter ?? undefined} />}
       </div>
     </div>
   )

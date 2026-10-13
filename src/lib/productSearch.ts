@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { DEFAULT_RADIUS, getPosition } from './geoApi'
-import { loadNearby } from './nearbyStore'
+import { CACHE_TTL, loadNearby } from './nearbyStore'
 
 // Mismo proxy que /api/geo/nearby (vite.config.ts en dev, rewrite de vercel.json en prod).
 const SEARCH_URL = '/api/geo/search'
@@ -133,12 +133,14 @@ export interface ProductSearchState {
   at: number
 }
 
-const KEY = 'product-search-v1'
+const KEY = 'product-search-v2'
 
 const loadState = (): ProductSearchState | null => {
   try {
     const raw = sessionStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw) as ProductSearchState) : null
+    const s = raw ? (JSON.parse(raw) as ProductSearchState) : null
+    // Misma vigencia que la ubicación: una búsqueda vieja no debe reabrir el mapa en otra zona.
+    return s && Date.now() - s.at < CACHE_TTL ? s : null
   } catch {
     return null
   }

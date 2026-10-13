@@ -40,6 +40,8 @@ export interface Deal {
   name: string
   description: string
   until: string
+  /** Instante (ms) en que deja de estar vigente; sin dato no vence */
+  endsAt?: number
   image?: string
   products: Product[]
 }
