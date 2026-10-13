@@ -8,14 +8,15 @@ import { ProductMarker } from '../../components/business/ProductMarker'
 import type { Business } from '../../data/types'
 import type { ProductHit } from '../../lib/productSearch'
 import { circlePolygon } from '../../lib/geoApi'
-import { FALLBACK_CENTER, MAPBOX_STYLE, MAPBOX_TOKEN } from '../../lib/mapbox'
+import { MAPBOX_STYLE, MAPBOX_TOKEN } from '../../lib/mapbox'
 
 interface MapViewProps {
   items: Business[]
   selectedId: number | null
   onSelect: (id: number) => void
   mapRef: RefObject<MapRef | null>
-  userPos?: { lat: number; lng: number }
+  /** Ubicación real del usuario: centra la cámara inicial. El mapa no se monta sin ella. */
+  userPos: { lat: number; lng: number }
   /** Resultados del asistente de compra: un pin por tienda con la imagen del producto */
   productHits?: ProductHit[]
   selectedPinId?: string | null
@@ -27,7 +28,7 @@ interface MapViewProps {
   onMoveEnd?: (center: { lat: number; lng: number }) => void
 }
 
-export function MapView({ items, selectedId, onSelect, mapRef, userPos = FALLBACK_CENTER, productHits, selectedPinId, onSelectPin, searchCenter, searchRadius = 5000, onMoveEnd }: MapViewProps) {
+export function MapView({ items, selectedId, onSelect, mapRef, userPos, productHits, selectedPinId, onSelectPin, searchCenter, searchRadius = 5000, onMoveEnd }: MapViewProps) {
   // Solo se recalcula el polígono cuando cambia el centro o el radio de la búsqueda.
   const area = useMemo(() => (searchCenter ? circlePolygon(searchCenter, searchRadius) : null), [searchCenter, searchRadius])
   // No se recentra el mapa al seleccionar un comercio: la vista queda donde está y el usuario puede

@@ -1,14 +1,6 @@
-import type { Offer, Requested } from './types'
+import type { Requested } from './types'
 
-export const OFFERS: Offer[] = [
-  { id: 1, type: 'tienda', businessId: 4, store: 'Punto Tech', title: 'Auriculares bluetooth a $23.999', description: 'Precio especial pagando en efectivo o transferencia.' },
-  { id: 2, type: 'servicio', businessId: 5, store: 'Electricidad Gómez', title: 'Instalaciones eléctricas 15% off', description: 'Presupuesto sin cargo, hasta el 31 de octubre.' },
-  { id: 3, type: 'emprendimiento', businessId: 10, store: 'Madera Viva', title: 'Muebles de interior 30% off', description: 'Mesas y racks a medida, válido hasta fin de año.' },
-  { id: 4, type: 'tienda', businessId: 1, store: 'Súper Del Valle', title: '2x1 en panificados', description: 'Todos los martes, hasta agotar stock.' },
-  { id: 5, type: 'servicio', businessId: 2, store: 'Taller Don Luis', title: '20% off en service completo', description: 'Con turno previo durante septiembre.' },
-  { id: 6, type: 'emprendimiento', businessId: 3, store: 'Dulce Taller', title: 'Mesa dulce para 20', description: 'Encargando con 5 días de anticipación.' },
-]
-
+/** Tarjetas de muestra de la sección "Más solicitados" de la landing (marcada como "Próximamente"). No se usan en el mapa. */
 export const REQUESTED: Requested[] = [
   { id: 1, type: 'emprendimiento', category: 'pasteleria', businessId: 3, person: 'Ana María Rossi', service: 'Pastelería', description: 'Tortas de cumpleaños personalizadas, tartas dulces, cupcakes, postres individuales, etc.', image: '/assets/photos/demo-pasteleria.jpg', avatar: '/assets/mock/avatar6.jpg' },
   { id: 2, type: 'servicio', category: 'electronica', businessId: 4, person: 'Juan Carlos Martínez', service: 'Reparación de celulares', description: 'Reparación de pantallas, cambios de placa, pin de carga, actualización de software, etc.', image: '/assets/photos/demo-reparacion-celulares.jpg', avatar: '/assets/mock/avatar1.jpg' },

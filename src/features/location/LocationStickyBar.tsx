@@ -5,15 +5,15 @@ import { openLocationModal, useLocationStore } from '../../lib/nearbyStore'
 const mq = window.matchMedia('(min-width:900px)')
 
 interface LocationStickyBarProps {
-  /** 'landing': abajo a la derecha (junto al buscador del hero). 'map': abajo a la derecha, debajo de la columna de controles (+, −, centrar). */
+  /** 'landing': abajo a la derecha (junto al buscador del hero). 'map': en la columna de controles, entre el zoom (+, −) y "Mi ubicación". */
   variant?: 'landing' | 'map'
 }
 
 /**
  * Indicador de ubicación persistente, compartido por la landing y el mapa.
  * - Con ubicación (desktop y mobile): círculo flotante (mismo estilo que el launcher del asistente). Al
- *   tocarlo crece hacia la izquierda y muestra: marcador + ("Estás en", solo desktop) + chip de la ciudad
- *   + botón actualizar + botón cerrar. En el mapa va debajo de la columna de controles (+, −, centrar).
+ *   tocarlo crece hacia la izquierda y muestra: marcador + ("Estás en", solo desktop) + nombre de la ciudad
+ *   + botón actualizar + botón cerrar. En el mapa va entre el zoom (+, −) y el botón "Mi ubicación".
  * - Sin ubicación, desktop: pill punteada ámbar con aviso + botón "Detectar".
  * - Sin ubicación, mobile: círculo "incompleto" (aro punteado ámbar + pulso + aviso) que abre el modal.
  *
@@ -33,18 +33,18 @@ export function LocationStickyBar({ variant = 'landing' }: LocationStickyBarProp
   }, [])
 
   const onMap = variant === 'map'
-  // En el mapa el indicador ocupa el último lugar de la columna de controles: expone su alto (+ separación)
-  // como --loc-lift para que .mp-ctrl suba y le deje el lugar.
+  // En el mapa el indicador va entre el zoom y "Mi ubicación": expone su alto (+ separación)
+  // como --loc-lift para que el zoom (.mp-ctrl) suba y le deje el lugar.
   useEffect(() => {
     if (!onMap) return
     const h = desk && !city ? 68 : 44
-    document.documentElement.style.setProperty('--loc-lift', `${h + 12}px`)
+    document.documentElement.style.setProperty('--loc-lift', `${h + 8}px`)
     return () => { document.documentElement.style.removeProperty('--loc-lift') }
   }, [onMap, desk, city])
 
-  // Chip con el nombre de la ciudad detectada (gradiente de marca).
-  const cityChip = (
-    <span style={{ display: 'inline-flex', alignItems: 'center', boxSizing: 'border-box', height: desk ? 44 : 32, padding: desk ? '0 18px' : '0 14px', borderRadius: 999, background: 'var(--rainbow-grad)', boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.25)', font: '800 14px var(--font-body)', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+  // Nombre de la ciudad detectada: texto solo (sin chip), que se recorta con "…" si es muy largo.
+  const cityName = (
+    <span style={{ minWidth: 0, font: '800 14px/1.2 var(--font-body)', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
       {city}
     </span>
   )
@@ -139,11 +139,11 @@ export function LocationStickyBar({ variant = 'landing' }: LocationStickyBarProp
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: open ? 10 : 0, padding: open ? '7px 7px 7px 16px' : 0, margin: open ? '-8.5px -8.5px -8.5px 0' : 0, borderRadius: 'var(--radius-pill, 999px)', backdropFilter: open ? 'blur(16px)' : 'none', WebkitBackdropFilter: open ? 'blur(16px)' : 'none', background: open ? 'var(--surface-glass-dark) padding-box, var(--rainbow-grad) border-box' : 'transparent', border: open ? '1.5px solid transparent' : 'none', boxShadow: open ? 'var(--glow-rainbow), 0 10px 30px rgba(0,0,0,.45)' : 'none', transition: 'gap .3s var(--ease-out), padding .3s var(--ease-out), margin .3s var(--ease-out)' }}
         >
           {/* El margen negativo (= padding + borde) hace que la pill crezca hacia afuera: el círculo no se mueve al abrir. */}
-          {/* Cuerpo que crece hacia la izquierda: marcador + ("Estás en") + chip de ciudad + botón actualizar */}
+          {/* Cuerpo que crece hacia la izquierda: marcador + ("Estás en") + nombre de la ciudad + botón actualizar */}
           <div className="loc-body">
             <Icon name="map-pin" size={24} color="#fff" style={{ flex: 'none', filter: 'drop-shadow(0 0 3px rgba(255,255,255,.9)) drop-shadow(0 0 9px rgba(255,255,255,.55))' }} />
             {desk && estasEn}
-            {cityChip}
+            {cityName}
             <button
               type="button"
               onClick={() => openLocationModal()}

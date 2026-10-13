@@ -9,7 +9,14 @@ export interface Nearby {
   businesses: Business[]
   /** Ciudad detectada según los comercios cercanos */
   city?: string
+  /** Momento (ms) en que se detectó: la caché caduca pasado CACHE_TTL */
+  at?: number
 }
+
+/** Vigencia de una ubicación guardada. En mobile las pestañas quedan abiertas días y no siempre
+ *  se puede revalidar en silencio (iOS no informa el permiso como concedido), así que una
+ *  ubicación vieja se descarta y se vuelve a pedir en lugar de mostrar una zona que ya no es. */
+export const CACHE_TTL = 30 * 60 * 1000
 
 /** Ciudad más frecuente entre los resultados, sin prefijos tipo "Distrito Ciudad de". Prefiere la grafía con tilde. */
 const cityOf = (results: ApiResult[]): string | undefined => {
@@ -23,12 +30,13 @@ const cityOf = (results: ApiResult[]): string | undefined => {
   return best?.find((c) => c.normalize('NFD') !== c) ?? best?.[0]
 }
 
-const KEY = 'nearby-v6'
+const KEY = 'nearby-v7'
 
 export const loadNearby = (): Nearby | null => {
   try {
     const raw = sessionStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw) as Nearby) : null
+    const n = raw ? (JSON.parse(raw) as Nearby) : null
+    return n?.at && Date.now() - n.at < CACHE_TTL ? n : null
   } catch {
     return null
   }
@@ -49,7 +57,7 @@ export async function locateAndFetch(): Promise<Nearby> {
   // La ciudad real sale del reverse-geocoding de Mapbox (según lat/lng); si falla,
   // se usa la ciudad más frecuente entre los comercios cercanos como respaldo.
   const [results, geoCity] = await Promise.all([fetchNearby(latitude, longitude), reverseGeocode(latitude, longitude)])
-  const n: Nearby = { pos: { lat: latitude, lng: longitude }, businesses: results.map(toBusiness), city: geoCity ?? cityOf(results) }
+  const n: Nearby = { pos: { lat: latitude, lng: longitude }, businesses: results.map(toBusiness), city: geoCity ?? cityOf(results), at: Date.now() }
   saveNearby(n)
   return n
 }

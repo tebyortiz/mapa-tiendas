@@ -3,10 +3,7 @@ export const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string
 
 export const MAPBOX_STYLE = 'mapbox://styles/mapbox/dark-v11'
 
-// Encuadre neutro SOLO para la cámara inicial del mapa mientras el usuario todavía no
-// compartió su ubicación (provincia de Mendoza). Nunca se usa para pedir comercios al
-// backend: los resultados siempre salen de la ubicación real detectada.
-export const FALLBACK_CENTER = { lat: -33.5, lng: -68.8 }
+// No hay centro por defecto: el mapa solo se monta cuando ya se conoce la ubicación real.
 
 /**
  * Reverse-geocoding: dado un lat/lng, devuelve el nombre de la localidad/ciudad real

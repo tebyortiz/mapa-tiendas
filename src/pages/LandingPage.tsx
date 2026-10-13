@@ -1,7 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ShopAssistant, SHOP_ASSISTANT_ENABLED } from '../components/assistant/ShopAssistant'
+import { liveBusinesses } from '../lib/geoApi'
 import { autoLocateIfGranted, openLocationModal, useLocationStore } from '../lib/nearbyStore'
+import { useMinute } from '../lib/useMinute'
 import { LandingCatalog } from '../features/landing/Catalog'
 import { LandingHero } from '../features/landing/Hero'
 import { LandingJoin, LandingFooter } from '../features/landing/JoinFooter'
@@ -16,7 +18,9 @@ import type { OpenMap } from '../features/landing/shared'
 export default function LandingPage() {
   const navigate = useNavigate()
   const { nearby, loading } = useLocationStore()
-  const geo = { nearby, loading }
+  // Las secciones reciben los comercios sin las ofertas ya vencidas (los datos quedan en caché).
+  const now = useMinute()
+  const geo = useMemo(() => ({ nearby: nearby && { ...nearby, businesses: liveBusinesses(nearby.businesses, now) }, loading }), [nearby, loading, now])
 
   // Al cargar la landing: si el permiso ya está concedido se geolocaliza en silencio.
   // Si no, no se fuerza ningún prompt: la barra sticky invita a detectar la ubicación.

@@ -339,10 +339,10 @@
 .loc-sticky > * { pointer-events: auto; }
 /* Landing: abajo a la derecha (a la altura del buscador del hero, sobre la ciudad 3D) */
 .loc-sticky-desk { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); right: var(--gutter); }
-/* Mapa: último lugar de la columna de controles (+, −, centrar), que sube --loc-lift para dejarle el hueco.
+/* Mapa: va entre el zoom (+, −), que sube --loc-lift para dejarle el hueco, y el botón "Mi ubicación" (52px debajo).
    Mismo z-index que .mp-ctrl: así el panel de sucursales y las fichas lo tapan igual que a los controles. */
-.loc-sticky-map { right: 12px; bottom: 144px; z-index: 540; }
-@media (min-width: 900px) { .loc-sticky-map { bottom: 24px; } }
+.loc-sticky-map { right: 12px; bottom: 196px; z-index: 540; }
+@media (min-width: 900px) { .loc-sticky-map { bottom: 76px; } }
 .loc-sticky-mob { right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 /* Cuerpo que se despliega desde el círculo: colapsado por defecto, crece al abrir */
 /* padding + margen negativo: deja lugar para que el glow del marcador no se recorte con overflow:hidden */
@@ -833,7 +833,8 @@ a:hover {
   }
   .mp-panel[data-open='false'] .mp-list { display: none !important; }
   .mp-grip { display: none; }
-  .mp-ctrl { bottom: calc(24px + var(--loc-lift, 0px)) !important; }
+  .mp-ctrl { bottom: calc(24px + 52px + var(--loc-lift, 0px)) !important; }
+  .mp-ctrl-locate { bottom: 24px !important; }
   .mp-sheet {
     left: auto !important;
     right: 72px !important;
