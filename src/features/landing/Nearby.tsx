@@ -11,8 +11,11 @@ import type { Geo } from '../../lib/nearbyStore'
 import { LocationGate } from '../location/LocationGate'
 import type { OpenMap } from './shared'
 
+/** Card de una sucursal. Las de negocios sin plan vigente (kind "admin") van simples: foto,
+ *  nombre de la sucursal, rubro "Otros", dirección y distancia, sin logo de cadena ni estado. */
 function NearbyStoreCard({ b, onClick }: { b: Business; onClick: () => void }) {
   const { h, bind } = useHover()
+  const simple = b.kind === 'admin'
   return (
     <div
       role="button"
@@ -22,28 +25,38 @@ function NearbyStoreCard({ b, onClick }: { b: Business; onClick: () => void }) {
       style={{ display: 'flex', flexDirection: 'column', gap: 14, height: '100%', boxSizing: 'border-box', padding: 12, borderRadius: 'var(--radius-panel)', cursor: 'pointer', background: h ? 'var(--surface-raised)' : 'var(--surface)', boxShadow: h ? 'var(--glow-tienda)' : 'inset 0 0 0 1px var(--border)', transition: 'background var(--dur-base), box-shadow var(--dur-slow) var(--ease-out)' }}
     >
       <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 10', borderRadius: 'var(--radius-card)', overflow: 'hidden', boxShadow: 'inset 0 0 0 1px rgba(255,111,97,.45)' }}>
-        <ImageSlot src={b.image} placeholder="Foto de la sucursal" style={{ position: 'absolute', inset: 0 }} />
+        <ImageSlot src={b.image || undefined} placeholder={simple ? 'Foto del frente' : 'Foto de la sucursal'} style={{ position: 'absolute', inset: 0 }} />
       </div>
+      {/* Todas las filas tienen alto fijo (título en 1 línea, dirección reservada) y los chips van a
+          continuación, no al fondo: así título, rubro, dirección y chips quedan a la misma altura
+          en todas las cards del carrusel, tengan plan o no. */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0 4px 4px', minWidth: 0, flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          {b.chainImage ? (
-            <div style={{ width: 36, height: 36, flex: 'none', borderRadius: '50%', background: `url(${b.chainImage}) center/contain no-repeat, #fff`, boxShadow: '0 0 0 2px var(--surface), 0 0 0 3px rgba(255,111,97,.7)' }} />
-          ) : (
-            <ImageSlot shape="circle" placeholder="Logo" style={{ width: 36, height: 36, flex: 'none', borderRadius: '50%', boxShadow: '0 0 0 2px var(--surface), 0 0 0 3px rgba(255,111,97,.7)' }} />
-          )}
-          <span style={{ font: '700 13px var(--font-body)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-body)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.chain || b.name}</span>
-        </div>
-        <div style={{ font: '800 19px/1.2 var(--font-body)', color: '#fff' }}>{b.branch || b.name}</div>
+        {simple ? (
+          // Sin plan no hay logo ni cadena: se reserva el alto de esa fila para alinear el título.
+          <div aria-hidden="true" style={{ height: 36, flex: 'none' }} />
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+            {b.chainImage ? (
+              <div style={{ width: 36, height: 36, flex: 'none', borderRadius: '50%', background: `url(${b.chainImage}) center/contain no-repeat, #fff`, boxShadow: '0 0 0 2px var(--surface), 0 0 0 3px rgba(255,111,97,.7)' }} />
+            ) : (
+              <ImageSlot shape="circle" placeholder="Logo" style={{ width: 36, height: 36, flex: 'none', borderRadius: '50%', boxShadow: '0 0 0 2px var(--surface), 0 0 0 3px rgba(255,111,97,.7)' }} />
+            )}
+            <span style={{ font: '700 13px var(--font-body)', letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-body)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.chain || b.name}</span>
+          </div>
+        )}
+        <div style={{ font: '800 19px/1.2 var(--font-body)', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.branch || b.name}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, font: '600 14px var(--font-body)', color: 'var(--tienda-2)' }}>
-          <Icon category={b.category} size={16} />
-          {b.categoryLabel}
+          <Icon category={simple ? 'otros' : b.category} size={16} />
+          {simple ? 'Otros' : b.categoryLabel}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, font: '500 13px var(--font-body)', color: 'var(--text-muted)', minWidth: 0 }}>
-          <Icon name="map-pin" size={14} />
-          <span className="nearby-addr" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.address}</span>
+        {/* El marker se alinea con la primera línea: en desktop la dirección reserva 2 líneas
+            (.nearby-addr) y centrado en ese bloque quedaba corrido hacia abajo. */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, font: '500 13px/1.3 var(--font-body)', color: 'var(--text-muted)', minWidth: 0 }}>
+          <Icon name="map-pin" size={14} style={{ marginTop: 1.5 }} />
+          <span className="nearby-addr" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.address || 'Dirección no informada'}</span>
         </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 'auto', paddingTop: 8 }}>
-          <Badge status={b.open ? 'abierto' : 'cerrado'}>{b.open ? 'Abierto' : 'Cerrado'}</Badge>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', paddingTop: 8 }}>
+          {!simple && <Badge status={b.open ? 'abierto' : 'cerrado'}>{b.open ? 'Abierto' : 'Cerrado'}</Badge>}
           <Badge icon="map-pin">{b.distance}</Badge>
           {b.hasOffers && <Badge type="todas" variant="solid" icon="badge-percent">Ofertas</Badge>}
         </div>
@@ -64,8 +77,8 @@ function NearbyStoreCard({ b, onClick }: { b: Business; onClick: () => void }) {
 export function LandingNearby({ onOpenMap, geo }: { onOpenMap: OpenMap; geo: Geo }) {
   const trackRef = useHScroll<HTMLDivElement>()
   const { nearby } = geo
-  // Los negocios sin tiendas (kind "admin") solo se muestran en el mapa: no tienen horarios ni logo.
-  const list = (nearby?.businesses ?? []).filter((b) => b.type === 'tienda' && b.kind !== 'admin')
+  // Incluye los pines de negocios sin plan vigente (kind "admin"), que se muestran con la card simple.
+  const list = (nearby?.businesses ?? []).filter((b) => b.type === 'tienda')
   return (
     <section id="cerca" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '56px 0 72px', background: 'linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.01))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)' }}>
       <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(40% 55% at 8% 100%,rgba(250,110,78,.2),transparent 70%),radial-gradient(38% 50% at 92% 95%,rgba(164,116,245,.22),transparent 70%),radial-gradient(45% 40% at 55% 0%,rgba(79,169,238,.14),transparent 70%)' }} />

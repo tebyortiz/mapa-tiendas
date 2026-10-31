@@ -411,7 +411,7 @@ export default function MapPage() {
         {!productMode && s?.kind === 'admin' && (
           <div key={s.id} className="mp-sheet" style={{ position: 'absolute', zIndex: 650, left: 8, right: 8, bottom: 8, maxHeight: '78%', overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'cf-rise var(--dur-slow) var(--ease-out)' }}>
             <AdminSheet
-              name={s.name} image={s.image || undefined} address={s.address} distance={s.distance}
+              name={s.name} chain={s.chain} image={s.image || undefined} address={s.address} distance={s.distance}
               onClose={() => setSel(null)}
               onDirections={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`, '_blank')}
             />
