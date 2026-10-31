@@ -7,6 +7,8 @@ import { TYPE } from '../ui/typeTheme'
 
 export interface AdminSheetProps {
   name: string
+  /** Nombre del negocio; se muestra arriba del título solo si difiere (pin de una tienda sin plan vigente) */
+  chain?: string
   image?: string
   address?: string
   distance?: string
@@ -18,11 +20,11 @@ export interface AdminSheetProps {
 const t = TYPE.tienda
 
 /**
- * Ficha de un negocio sin tiendas (kind "admin"): solo foto del frente, nombre y dirección.
- * No muestra horarios, ofertas ni "Abierto/Cerrado" (esos datos todavía no existen) ni el
- * botón a la tienda online: el negocio aún no la armó.
+ * Ficha del pin común de un negocio (kind "admin": sin tiendas o sin plan vigente): solo foto del
+ * frente, nombre y dirección. No muestra horarios, ofertas ni "Abierto/Cerrado" (esos datos no se
+ * informan) ni el botón a la tienda online, que no está armada o no está habilitada.
  */
-export function AdminSheet({ name, image, address, distance, onClose, onDirections, style }: AdminSheetProps) {
+export function AdminSheet({ name, chain, image, address, distance, onClose, onDirections, style }: AdminSheetProps) {
   return (
     <div
       role="dialog"
@@ -43,7 +45,10 @@ export function AdminSheet({ name, image, address, distance, onClose, onDirectio
               <Icon name="store" size={18} color="#fff" />
             </span>
           </span>
-          <div style={{ flex: 1, minWidth: 0, font: '800 21px/1.2 var(--font-body)', color: '#fff', overflowWrap: 'anywhere' }}>{name}</div>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {chain && chain !== name && <div style={{ font: '700 13px var(--font-body)', color: 'var(--text-muted)', overflowWrap: 'anywhere' }}>{chain}</div>}
+            <div style={{ font: '800 21px/1.2 var(--font-body)', color: '#fff', overflowWrap: 'anywhere' }}>{name}</div>
+          </div>
           {distance && <Badge icon="map-pin" style={{ flex: 'none' }}>{distance}</Badge>}
         </div>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '12px 0 4px', borderTop: '1px solid var(--border)', font: '500 13px var(--font-body)', color: address ? 'var(--text-body)' : 'var(--text-muted)' }}>

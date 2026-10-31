@@ -37,7 +37,7 @@ export interface ApiOffer {
 /** Sucursal de "gesto" (tiene profile) o de "ttv" (tiene image/hours). */
 export interface ApiResult {
   source: 'gesto' | 'ttv' | string
-  /** 'store': una tienda. 'admin': un negocio sin tiendas todavía (storeName, hours y offers vacíos). */
+  /** 'store': una tienda. 'admin': pin común del negocio, sin tiendas o sin plan vigente (hours y offers vacíos). */
   kind?: 'store' | 'admin'
   sourceId?: string
   _id?: string
@@ -153,18 +153,23 @@ const toDelivery = (r: ApiResult): DeliveryMode[] | undefined => {
 /** Texto de reemplazo para negocios dados de alta sin nombre (en el panel solo la ubicación es obligatoria). */
 export const ADMIN_FALLBACK_NAME = 'Comercio de la zona'
 
-/** Negocio sin tiendas: solo nombre, dirección y foto del frente. Sin foto no se usa la de stock,
- *  para no mostrar un frente que no es el suyo; la ficha y el pin muestran un ícono. */
+/**
+ * Pin común del negocio (kind "admin"): sale cuando todavía no creó tiendas o cuando no tiene el
+ * plan vigente (en ese caso llega uno por cada tienda, con su storeName). Solo nombre, dirección y
+ * foto del frente. Sin foto no se usa la de stock, para no mostrar un frente que no es el suyo.
+ */
 function adminToBusiness(r: ApiResult, i: number): Business {
   const [lng, lat] = r.location.coordinates
-  const name = r.name?.trim() || ADMIN_FALLBACK_NAME
+  const chain = r.name?.trim() || ADMIN_FALLBACK_NAME
+  // storeName viene vacío en los negocios sin tiendas: el título cae en el nombre del negocio
+  const name = r.storeName?.trim() || chain
   const address = [r.address?.raw ?? r.address?.localAddress, r.address?.city].filter(Boolean).join(', ')
   const category = toCategory(r.profile?.chainType)
   return {
     id: API_ID_BASE + i,
     type: 'tienda',
     kind: 'admin',
-    chain: name,
+    chain,
     branch: name,
     name,
     image: r.profile?.logo || r.image || '',
@@ -179,7 +184,7 @@ function adminToBusiness(r: ApiResult, i: number): Business {
     description: '',
     deals: [],
     hasOffers: false,
-    search: [r.name, address].filter(Boolean).join(' ').toLowerCase(),
+    search: [r.name, r.storeName, address].filter(Boolean).join(' ').toLowerCase(),
   }
 }
 
@@ -207,7 +212,8 @@ export function toBusiness(r: ApiResult, i: number): Business {
     category,
     categoryLabel,
     distance: fmtDistance(r.distance),
-    open: isOpenApi(r.hours) ?? r.status,
+    // status false en una tienda = sucursal apagada a mano (TTV): cerrada aunque el horario diga abierto
+    open: r.status === false ? false : (isOpenApi(r.hours) ?? r.status),
     lat,
     lng,
     address,
