@@ -81,5 +81,8 @@ export function useEdgeFade<T extends HTMLElement = HTMLDivElement>({ axis = 'y'
   const mask = `linear-gradient(${dir}, ${a}, ${b})`
   const style: CSSProperties = edges.start || edges.end ? { WebkitMaskImage: mask, maskImage: mask } : {}
 
+  // Desestructurar al llamarlo (`const { ref: fadeRef, style: fadeStyle } = useEdgeFade()`): si el
+  // objeto entero se usa como `ref={fade.ref}`, el linter de React lo toma por un ref y marca como
+  // error leer `fade.style` durante el render.
   return { ref, style }
 }

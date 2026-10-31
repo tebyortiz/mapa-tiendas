@@ -1,7 +1,7 @@
 import type { CSSProperties, ComponentType } from 'react'
 import {
   Apple, Beef, Candy, Croissant, Package, ShoppingBasket,
-  ArrowRight, BadgePercent, Bot, Bone, BriefcaseMedical, CalendarClock, Cake, CarFront, ChevronDown, ChevronLeft,
+  ArrowRight, BadgePercent, Bot, Bone, BriefcaseMedical, CalendarClock, Cake, CarFront, Check, ChevronDown, ChevronLeft,
   ChevronRight, ChevronUp, Clock, ConciergeBell, Dog, Droplets, Footprints, Gamepad2, Gift, Globe, Hammer,
   HandPlatter, Headphones, Info, KeyRound, LayoutGrid, ListSortDescending, LocateFixed, LogIn, Mail, Map, MapPin, MapPinned, MessageCircle, MessageSquareWarning, Minus,
   MapPinOff, MapPinSearch, Navigation, Palette, Phone, Pizza, Plus, RefreshCw, Scissors, Search, Shirt, ShoppingBag, Signpost, Smartphone, Sofa, Sparkles, Store,
@@ -25,6 +25,7 @@ const ICONS: Record<string, ComponentType<LucideProps>> = {
   'calendar-clock': CalendarClock,
   cake: Cake,
   'car-front': CarFront,
+  check: Check,
   'chevron-down': ChevronDown,
   'chevron-left': ChevronLeft,
   'chevron-right': ChevronRight,
@@ -116,11 +117,13 @@ export interface IconProps {
   category?: CategoryKey | string
   size?: number
   color?: string
+  /** Grosor del trazo; útil para íconos muy chicos (p. ej. el check del badge de ubicación) */
+  strokeWidth?: number
   label?: string
   style?: CSSProperties
 }
 
-export function Icon({ name = 'store', category, size = 20, color = 'currentColor', label, style }: IconProps) {
+export function Icon({ name = 'store', category, size = 20, color = 'currentColor', strokeWidth = 2, label, style }: IconProps) {
   const n = category ? (CATEGORY_ICONS[category as CategoryKey] ?? 'store') : name
   const Cmp = ICONS[n] ?? Store
   return (
@@ -130,7 +133,7 @@ export function Icon({ name = 'store', category, size = 20, color = 'currentColo
       aria-hidden={label ? undefined : true}
       style={{ display: 'inline-flex', flex: 'none', width: size, height: size, color, ...style }}
     >
-      <Cmp size={size} strokeWidth={2} style={{ display: 'block' }} />
+      <Cmp size={size} strokeWidth={strokeWidth} style={{ display: 'block' }} />
     </span>
   )
 }

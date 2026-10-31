@@ -1,13 +1,14 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import type { RefObject } from 'react'
 import Map, { Layer, Marker, Source } from 'react-map-gl/mapbox'
 import type { MapRef } from 'react-map-gl/mapbox'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import { AdminMarker } from '../../components/business/AdminMarker'
 import { MapMarker } from '../../components/business/MapMarker'
 import { ProductMarker } from '../../components/business/ProductMarker'
 import type { Business } from '../../data/types'
 import type { ProductHit } from '../../lib/productSearch'
-import { circlePolygon } from '../../lib/geoApi'
+import { circlePolygon, spreadPins } from '../../lib/geoApi'
 import { MAPBOX_STYLE, MAPBOX_TOKEN } from '../../lib/mapbox'
 
 interface MapViewProps {
@@ -31,6 +32,9 @@ interface MapViewProps {
 export function MapView({ items, selectedId, onSelect, mapRef, userPos, productHits, selectedPinId, onSelectPin, searchCenter, searchRadius = 5000, onMoveEnd }: MapViewProps) {
   // Solo se recalcula el polígono cuando cambia el centro o el radio de la búsqueda.
   const area = useMemo(() => (searchCenter ? circlePolygon(searchCenter, searchRadius) : null), [searchCenter, searchRadius])
+  // Pines casi en el mismo punto se separan unos píxeles según el zoom, para poder tocarlos todos.
+  const [zoom, setZoom] = useState(15)
+  const offsets = useMemo(() => spreadPins(items, zoom), [items, zoom])
   // No se recentra el mapa al seleccionar un comercio: la vista queda donde está y el usuario puede
   // seguir arrastrando/explorando con la ficha abierta. (Antes un easeTo movía el marker hacia arriba
   // y, al re-dispararse en cada render, "pegaba" la vista al marker seleccionado.)
@@ -45,6 +49,7 @@ export function MapView({ items, selectedId, onSelect, mapRef, userPos, productH
         style={{ position: 'absolute', inset: 0 }}
         attributionControl
         onMoveEnd={onMoveEnd ? (e) => onMoveEnd({ lat: e.viewState.latitude, lng: e.viewState.longitude }) : undefined}
+        onZoomEnd={(e) => setZoom(e.viewState.zoom)}
       >
         {area && (
           <Source id="search-area" type="geojson" data={area}>
@@ -55,8 +60,12 @@ export function MapView({ items, selectedId, onSelect, mapRef, userPos, productH
         {items.map((b) => {
           const s = b.id === selectedId
           return (
-            <Marker key={b.id} latitude={b.lat} longitude={b.lng} anchor="bottom" style={{ zIndex: s ? 2 : 1 }}>
-              <MapMarker type={b.type} category={b.category} selected={s} label={b.name} onClick={() => onSelect(b.id)} />
+            <Marker key={b.id} latitude={b.lat} longitude={b.lng} anchor="bottom" offset={offsets.get(b.id)} style={{ zIndex: s ? 2 : 1 }}>
+              {b.kind === 'admin' ? (
+                <AdminMarker selected={s} label={b.name} onClick={() => onSelect(b.id)} />
+              ) : (
+                <MapMarker type={b.type} category={b.category} selected={s} label={b.name} onClick={() => onSelect(b.id)} />
+              )}
             </Marker>
           )
         })}

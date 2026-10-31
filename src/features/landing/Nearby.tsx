@@ -64,7 +64,8 @@ function NearbyStoreCard({ b, onClick }: { b: Business; onClick: () => void }) {
 export function LandingNearby({ onOpenMap, geo }: { onOpenMap: OpenMap; geo: Geo }) {
   const trackRef = useHScroll<HTMLDivElement>()
   const { nearby } = geo
-  const list = (nearby?.businesses ?? []).filter((b) => b.type === 'tienda')
+  // Los negocios sin tiendas (kind "admin") solo se muestran en el mapa: no tienen horarios ni logo.
+  const list = (nearby?.businesses ?? []).filter((b) => b.type === 'tienda' && b.kind !== 'admin')
   return (
     <section id="cerca" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '56px 0 72px', background: 'linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.01))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,.06)' }}>
       <div aria-hidden="true" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(40% 55% at 8% 100%,rgba(250,110,78,.2),transparent 70%),radial-gradient(38% 50% at 92% 95%,rgba(164,116,245,.22),transparent 70%),radial-gradient(45% 40% at 55% 0%,rgba(79,169,238,.14),transparent 70%)' }} />

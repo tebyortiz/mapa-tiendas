@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import type { MapRef } from 'react-map-gl/mapbox'
+import { AdminSheet } from '../components/business/AdminSheet'
 import { BusinessSheet } from '../components/business/BusinessSheet'
 import { ShopAssistant, SHOP_ASSISTANT_ENABLED } from '../components/assistant/ShopAssistant'
 import { Icon } from '../components/ui/Icon'
@@ -64,8 +65,11 @@ export default function MapPage() {
   const [exploring, setExploring] = useState(false)
   // Espejo del centro de búsqueda: deja que refresh() (un listener estable, sin deps) lea el
   // valor actual sin re-suscribirse ni re-ejecutarse en cada exploración.
+  // Se actualiza en un effect (no durante el render, donde React no permite escribir refs).
   const searchCenterRef = useRef(searchCenter)
-  searchCenterRef.current = searchCenter
+  useEffect(() => {
+    searchCenterRef.current = searchCenter
+  }, [searchCenter])
   // Resultados del asistente de compra: cuando hay, el mapa pasa a "modo producto"
   const ps = useProductSearch()
   const productMode = !!ps && ps.hits.length > 0
@@ -164,6 +168,9 @@ export default function MapPage() {
   //   modal de permisos. La búsqueda de la URL (si la hay) se corre al detectar la ubicación.
   useEffect(() => {
     if (cached) {
+      // Arrancar la búsqueda de la URL pone el banner en "Buscando…" en el acto: es un único render
+      // extra y buscado (no hay cascada), por eso se silencia la regla.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (initialQ.trim().length >= 2) void runSearch(initialQ)
       return
     }
@@ -184,6 +191,8 @@ export default function MapPage() {
     if (!seededRef.current) {
       seededRef.current = true
       applyLocated(nearby)
+      // Igual que al entrar con caché: el "Buscando…" inmediato es intencional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (initialQ.trim().length >= 2) void runSearch(initialQ, nearby.pos)
       return
     }
@@ -203,6 +212,8 @@ export default function MapPage() {
   // Al entrar al mapa: si ya había datos cacheados se muestran al instante y se revalidan
   // en segundo plano para reflejar lo nuevo; si todavía no hay ubicación, el modal pide el permiso.
   useEffect(() => {
+    // Falso positivo: refresh() solo cambia estado después de sus `await` (permiso, GPS y POST).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (cached) void refresh()
   }, [cached, refresh])
 
@@ -253,9 +264,9 @@ export default function MapPage() {
   const present = useMemo(() => new Set(businesses.filter((b) => type === 'todas' || b.type === type).map((b) => b.category)), [businesses, type])
   const s = businesses.find((b) => b.id === sel)
   // Difuminado dentro del sheet: arriba de la card y abajo de las ofertas, como pista de scroll.
-  const sheetFade = useEdgeFade<HTMLDivElement>({ axis: 'y', start: 14, end: 24 })
+  const { ref: sheetFadeRef, style: sheetFadeStyle } = useEdgeFade<HTMLDivElement>({ axis: 'y', start: 14, end: 24 })
   // Difuminado del resultado de producto (en desktop la card entera scrollea).
-  const psFade = useEdgeFade<HTMLDivElement>({ axis: 'y', start: 18, end: 24 })
+  const { ref: psFadeRef, style: psFadeStyle } = useEdgeFade<HTMLDivElement>({ axis: 'y', start: 18, end: 24 })
   const pick = (id: number) => {
     setSel(id)
     if (!desk) setExp(false)
@@ -393,12 +404,21 @@ export default function MapPage() {
         <LocationPermissionModal />
         <LocationStickyBar variant="map" />
         {selHit && (
-          <div ref={psFade.ref} className="mp-sheet mp-sheet-product" style={{ position: 'absolute', zIndex: 650, left: 8, right: 8, bottom: 8, maxHeight: '82%', overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'cf-rise var(--dur-slow) var(--ease-out)', ...psFade.style }}>
+          <div ref={psFadeRef} className="mp-sheet mp-sheet-product" style={{ position: 'absolute', zIndex: 650, left: 8, right: 8, bottom: 8, maxHeight: '82%', overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'cf-rise var(--dur-slow) var(--ease-out)', ...psFadeStyle }}>
             <ProductResultSheet hit={selHit} onClose={() => setSelPin(null)} />
           </div>
         )}
-        {!productMode && s && (
-          <div key={s.id} ref={sheetFade.ref} className="mp-sheet" style={{ position: 'absolute', zIndex: 650, left: 8, right: 8, bottom: 8, maxHeight: '78%', overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, animation: 'cf-rise var(--dur-slow) var(--ease-out)', ...sheetFade.style }}>
+        {!productMode && s?.kind === 'admin' && (
+          <div key={s.id} className="mp-sheet" style={{ position: 'absolute', zIndex: 650, left: 8, right: 8, bottom: 8, maxHeight: '78%', overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', animation: 'cf-rise var(--dur-slow) var(--ease-out)' }}>
+            <AdminSheet
+              name={s.name} image={s.image || undefined} address={s.address} distance={s.distance}
+              onClose={() => setSel(null)}
+              onDirections={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${s.lat},${s.lng}`, '_blank')}
+            />
+          </div>
+        )}
+        {!productMode && s && s.kind !== 'admin' && (
+          <div key={s.id} ref={sheetFadeRef} className="mp-sheet" style={{ position: 'absolute', zIndex: 650, left: 8, right: 8, bottom: 8, maxHeight: '78%', overflowY: 'auto', scrollbarWidth: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, animation: 'cf-rise var(--dur-slow) var(--ease-out)', ...sheetFadeStyle }}>
             <BusinessSheet
               type={s.type} name={s.name} chain={s.chain} branch={s.branch} chainImage={s.chainImage} category={s.category}
               categoryLabel={s.categoryLabel} image={s.image} description={s.description} address={s.address} hours={s.hours} delivery={s.delivery}

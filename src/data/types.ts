@@ -52,6 +52,9 @@ export type DeliveryMode = 'mostrador' | 'delivery'
 export interface Business {
   id: number
   type: BusinessType
+  /** 'admin': negocio cargado desde el panel interno que todavía no creó tiendas. Solo tiene
+   *  nombre, dirección y foto del frente (sin horarios, ofertas ni tienda online). */
+  kind?: 'store' | 'admin'
   chain: string
   branch: string
   name: string

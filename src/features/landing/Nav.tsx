@@ -6,7 +6,8 @@ import { Wordmark } from '../../components/brand/Wordmark'
 import { Button } from '../../components/ui/Button'
 import { Icon } from '../../components/ui/Icon'
 import { IconButton } from '../../components/ui/IconButton'
-import { SearchInput, SEARCH_SUGGESTIONS } from '../../components/ui/SearchInput'
+import { SearchInput } from '../../components/ui/SearchInput'
+import { SEARCH_SUGGESTIONS } from '../../components/ui/searchSuggestions'
 
 interface NavLinkDef {
   id: string

@@ -3,7 +3,8 @@ import type { FormEvent, PointerEvent } from 'react'
 import { Button } from '../../components/ui/Button'
 import { ErrorBoundary } from '../../components/ui/ErrorBoundary'
 import { Icon } from '../../components/ui/Icon'
-import { SearchInput, SEARCH_SUGGESTIONS } from '../../components/ui/SearchInput'
+import { SearchInput } from '../../components/ui/SearchInput'
+import { SEARCH_SUGGESTIONS } from '../../components/ui/searchSuggestions'
 import type { ProductImage } from './city/cityConfig'
 
 // [duración, delay] de las letras que parpadean, por posición (seed + índice)
