@@ -18,7 +18,7 @@ const LBL: Record<TypeKey, string> = { todas: 'lugares', tienda: 'tiendas', serv
 export function ResultsPanel({ items, selectedId, onSelect, expanded, setExpanded, type, desk }: ResultsPanelProps) {
   const chev = desk ? (expanded ? 'chevron-up' : 'chevron-down') : expanded ? 'chevron-down' : 'chevron-up'
   // Difuminado inferior: aparece solo cuando quedan más sucursales para deslizar hacia abajo.
-  const fade = useEdgeFade<HTMLDivElement>({ axis: 'y', start: 0, end: 28 })
+  const { ref: fadeRef, style: fadeStyle } = useEdgeFade<HTMLDivElement>({ axis: 'y', start: 0, end: 28 })
   return (
     <div
       className="mp-panel"
@@ -32,9 +32,9 @@ export function ResultsPanel({ items, selectedId, onSelect, expanded, setExpande
           <Icon name={chev} size={20} color="var(--text-muted)" />
         </span>
       </button>
-      <div ref={fade.ref} className="mp-list" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '10px 14px 16px', display: 'flex', flexDirection: 'column', gap: 10, ...fade.style }}>
+      <div ref={fadeRef} className="mp-list" style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', padding: '10px 14px 16px', display: 'flex', flexDirection: 'column', gap: 10, ...fadeStyle }}>
         {items.map((b) => (
-          <BusinessCard key={b.id} type={b.type} name={b.branch || b.name} category={b.category} categoryLabel={b.categoryLabel} distance={b.distance} open={b.open} address={b.address} image={b.image} hasOffers={b.hasOffers} selected={b.id === selectedId} onClick={() => onSelect(b.id)} style={{ flex: 'none' }} />
+          <BusinessCard key={b.id} type={b.type} name={b.branch || b.name} category={b.category} categoryLabel={b.categoryLabel} distance={b.distance} open={b.kind === 'admin' ? undefined : b.open} address={b.address} image={b.image} hasOffers={b.hasOffers} selected={b.id === selectedId} onClick={() => onSelect(b.id)} style={{ flex: 'none' }} />
         ))}
         {items.length === 0 && (
           <div style={{ padding: '24px 8px', textAlign: 'center', font: '500 14px var(--font-body)', color: 'var(--text-muted)' }}>No encontramos nada con ese filtro. Probá con otra categoría.</div>

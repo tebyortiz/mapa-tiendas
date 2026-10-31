@@ -117,7 +117,10 @@ function Orchestrator({ registry, images, avatarLayer }: { registry: Registry; i
       const weights = cats.map((c) => imagesRef.current.filter((i) => i.category === c).length || 1)
       let r = Math.random() * weights.reduce((a, b) => a + b, 0)
       let ci = 0
-      while (ci < cats.length - 1 && r >= weights[ci]) (r -= weights[ci]), ci++
+      while (ci < cats.length - 1 && r >= weights[ci]) {
+        r -= weights[ci]
+        ci++
+      }
       const category = cats[ci]
       // elige edificio de esa categoría evitando repetir el anterior
       let cands = byCat.get(category)!

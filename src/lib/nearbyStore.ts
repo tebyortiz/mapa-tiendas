@@ -30,7 +30,7 @@ const cityOf = (results: ApiResult[]): string | undefined => {
   return best?.find((c) => c.normalize('NFD') !== c) ?? best?.[0]
 }
 
-const KEY = 'nearby-v7'
+const KEY = 'nearby-v8'
 
 export const loadNearby = (): Nearby | null => {
   try {

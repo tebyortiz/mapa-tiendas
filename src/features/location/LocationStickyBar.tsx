@@ -136,7 +136,7 @@ export function LocationStickyBar({ variant = 'landing' }: LocationStickyBarProp
         <div
           className="loc-mob-pill"
           data-open={open ? 'true' : 'false'}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: open ? 10 : 0, padding: open ? '7px 7px 7px 16px' : 0, margin: open ? '-8.5px -8.5px -8.5px 0' : 0, borderRadius: 'var(--radius-pill, 999px)', backdropFilter: open ? 'blur(16px)' : 'none', WebkitBackdropFilter: open ? 'blur(16px)' : 'none', background: open ? 'var(--surface-glass-dark) padding-box, var(--rainbow-grad) border-box' : 'transparent', border: open ? '1.5px solid transparent' : 'none', boxShadow: open ? 'var(--glow-rainbow), 0 10px 30px rgba(0,0,0,.45)' : 'none', transition: 'gap .3s var(--ease-out), padding .3s var(--ease-out), margin .3s var(--ease-out)' }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: open ? 10 : 0, padding: open ? '7px 7px 7px 16px' : 0, margin: open ? '-8px -8px -8px 0' : 0, borderRadius: 'var(--radius-pill, 999px)', backdropFilter: open ? 'blur(16px)' : 'none', WebkitBackdropFilter: open ? 'blur(16px)' : 'none', background: open ? 'var(--surface-glass-dark)' : 'transparent', border: open ? '1px solid rgba(255,255,255,.18)' : 'none', boxShadow: open ? 'var(--glow-rainbow), 0 10px 30px rgba(0,0,0,.45)' : 'none', transition: 'gap .3s var(--ease-out), padding .3s var(--ease-out), margin .3s var(--ease-out)' }}
         >
           {/* El margen negativo (= padding + borde) hace que la pill crezca hacia afuera: el círculo no se mueve al abrir. */}
           {/* Cuerpo que crece hacia la izquierda: marcador + ("Estás en") + nombre de la ciudad + botón actualizar */}
@@ -174,6 +174,12 @@ export function LocationStickyBar({ variant = 'landing' }: LocationStickyBarProp
             <span style={{ width: '100%', height: '100%', borderRadius: 999, background: 'var(--surface-glass-dark)', backdropFilter: 'blur(16px)', WebkitBackdropFilter: 'blur(16px)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon name={open ? 'x' : 'map-pin'} size={compact ? 22 : 26} color="#fff" style={{ filter: 'drop-shadow(0 0 4px rgba(255,255,255,.9)) drop-shadow(0 0 11px rgba(255,255,255,.55))' }} />
             </span>
+            {/* Ubicación detectada: check verde arriba a la derecha (contraparte del "!" ámbar sin ubicación) */}
+            {!open && (
+              <span aria-hidden="true" style={{ position: 'absolute', top: -2, right: -2, width: compact ? 16 : 18, height: compact ? 16 : 18, boxSizing: 'border-box', borderRadius: 999, background: 'var(--cf-success)', border: '2px solid var(--cf-black)', boxShadow: '0 0 8px rgba(91,227,160,.6)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon name="check" size={compact ? 9 : 10} color="var(--cf-black)" strokeWidth={4} />
+              </span>
+            )}
           </button>
         </div>
       </div>

@@ -37,6 +37,8 @@ export interface ApiOffer {
 /** Sucursal de "gesto" (tiene profile) o de "ttv" (tiene image/hours). */
 export interface ApiResult {
   source: 'gesto' | 'ttv' | string
+  /** 'store': una tienda. 'admin': un negocio sin tiendas todavía (storeName, hours y offers vacíos). */
+  kind?: 'store' | 'admin'
   sourceId?: string
   _id?: string
   name: string
@@ -148,7 +150,41 @@ const toDelivery = (r: ApiResult): DeliveryMode[] | undefined => {
   return undefined
 }
 
+/** Texto de reemplazo para negocios dados de alta sin nombre (en el panel solo la ubicación es obligatoria). */
+export const ADMIN_FALLBACK_NAME = 'Comercio de la zona'
+
+/** Negocio sin tiendas: solo nombre, dirección y foto del frente. Sin foto no se usa la de stock,
+ *  para no mostrar un frente que no es el suyo; la ficha y el pin muestran un ícono. */
+function adminToBusiness(r: ApiResult, i: number): Business {
+  const [lng, lat] = r.location.coordinates
+  const name = r.name?.trim() || ADMIN_FALLBACK_NAME
+  const address = [r.address?.raw ?? r.address?.localAddress, r.address?.city].filter(Boolean).join(', ')
+  const category = toCategory(r.profile?.chainType)
+  return {
+    id: API_ID_BASE + i,
+    type: 'tienda',
+    kind: 'admin',
+    chain: name,
+    branch: name,
+    name,
+    image: r.profile?.logo || r.image || '',
+    category,
+    categoryLabel: CATEGORIES.find(([k]) => k === category)?.[1] ?? 'Comercio',
+    distance: fmtDistance(r.distance),
+    open: r.status,
+    lat,
+    lng,
+    address,
+    hours: '',
+    description: '',
+    deals: [],
+    hasOffers: false,
+    search: [r.name, address].filter(Boolean).join(' ').toLowerCase(),
+  }
+}
+
 export function toBusiness(r: ApiResult, i: number): Business {
+  if (r.kind === 'admin') return adminToBusiness(r, i)
   const [lng, lat] = r.location.coordinates
   const deals = (r.offers ?? []).map(toDeal)
   const a = r.address
@@ -160,9 +196,11 @@ export function toBusiness(r: ApiResult, i: number): Business {
   return {
     id: API_ID_BASE + i,
     type: 'tienda',
+    kind: 'store',
     chain: r.name,
-    branch: r.storeName ?? r.name,
-    name: r.storeName ?? r.name,
+    // storeName puede venir vacío (""): en ese caso el título cae en el nombre del negocio
+    branch: r.storeName || r.name,
+    name: r.storeName || r.name,
     chainImage: r.profile?.logo || undefined,
     // gesto trae una sola imagen (el logo), que sirve también de foto de la sucursal
     image: r.image || r.profile?.logo || FALLBACK_PHOTO,
@@ -199,6 +237,33 @@ export function metersBetween(a: { lat: number; lng: number }, b: { lat: number;
   const r = (d: number) => (d * Math.PI) / 180
   const h = Math.sin(r(b.lat - a.lat) / 2) ** 2 + Math.cos(r(a.lat)) * Math.cos(r(b.lat)) * Math.sin(r(b.lng - a.lng) / 2) ** 2
   return 2 * 6371000 * Math.asin(Math.sqrt(h))
+}
+
+/**
+ * Desplazamiento en píxeles para los pines que, al zoom actual, quedan a menos de `minPx` entre sí
+ * (p. ej. dos negocios a 16 m): se agrupan y se reparten en un círculo alrededor del primero, así
+ * todos se pueden tocar. Al acercar el zoom se separan solos y el desplazamiento desaparece.
+ */
+export function spreadPins(items: { id: number; lat: number; lng: number }[], zoom: number, minPx = 30): Map<number, [number, number]> {
+  const metersPerPx = (lat: number) => (156543.03392 * Math.cos((lat * Math.PI) / 180)) / 2 ** zoom
+  const groups: { lat: number; lng: number; ids: number[] }[] = []
+  for (const it of items) {
+    const g = groups.find((g) => metersBetween(g, it) / metersPerPx(it.lat) < minPx)
+    if (g) g.ids.push(it.id)
+    else groups.push({ lat: it.lat, lng: it.lng, ids: [it.id] })
+  }
+  const out = new Map<number, [number, number]>()
+  for (const { ids } of groups) {
+    if (ids.length < 2) continue
+    // Radio suficiente para que entre pines vecinos del círculo queden al menos minPx.
+    const r = Math.max(minPx * 0.6, (minPx * ids.length) / (2 * Math.PI))
+    ids.forEach((id, i) => {
+      // Arranca a la izquierda: un par queda lado a lado (los pines son más altos que anchos).
+      const a = Math.PI + (2 * Math.PI * i) / ids.length
+      out.set(id, [Math.round(r * Math.cos(a)), Math.round(r * Math.sin(a))])
+    })
+  }
+  return out
 }
 
 /** Polígono (GeoJSON) que aproxima un círculo de radio en metros, para dibujar el área de búsqueda. */

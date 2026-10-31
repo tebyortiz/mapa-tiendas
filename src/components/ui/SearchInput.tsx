@@ -2,22 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import { Icon } from './Icon'
 
-/** Sugerencias que se "tipean" en el placeholder animado del buscador. */
-export const SEARCH_SUGGESTIONS = [
-  'Pantalón jean',
-  'Auricular Inalámbrico',
-  'Mecánico',
-  'Zapatillas',
-  'Desodorante',
-  'Comida casera',
-  'Sommier',
-  'Crema Facial',
-  'Plomero',
-  'Alimento balanceado',
-  'Bebidas',
-  'Torta de cumpleaños',
-]
-
 export interface SearchInputProps {
   value?: string
   defaultValue?: string
@@ -50,17 +34,11 @@ export function SearchInput({ value, defaultValue, onChange, placeholder = 'Busc
     return out
   }, [placeholder, suggestions])
   const [typed, setTyped] = useState(placeholder)
-  const animate = !!phrases && !f && !val
+  const reducedMotion = useState(() => matchMedia('(prefers-reduced-motion: reduce)').matches)[0]
+  // Sin animación el input muestra el placeholder fijo (ver `placeholder=` abajo).
+  const animate = !!phrases && !f && !val && !reducedMotion
   useEffect(() => {
-    if (!phrases) return
-    if (!animate) {
-      setTyped(placeholder)
-      return
-    }
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setTyped(placeholder)
-      return
-    }
+    if (!phrases || !animate) return
     let cancelled = false
     let timer = 0
     let pi = 0 // índice de frase
@@ -96,6 +74,8 @@ export function SearchInput({ value, defaultValue, onChange, placeholder = 'Busc
     return () => {
       cancelled = true
       clearTimeout(timer)
+      // Al pausar (foco o texto) se resetea, para que al retomar no asome el texto a medio tipear.
+      setTyped(placeholder)
     }
   }, [phrases, animate, placeholder])
 

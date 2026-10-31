@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import { runProductSearch } from '../../lib/productSearch'
 import { Icon } from '../ui/Icon'
 import { IconButton } from '../ui/IconButton'
-import { SearchInput, SEARCH_SUGGESTIONS } from '../ui/SearchInput'
+import { SearchInput } from '../ui/SearchInput'
+import { SEARCH_SUGGESTIONS } from '../ui/searchSuggestions'
 
 /**
  * Asistente de compra (robot flotante) temporalmente oculto a pedido: se mantiene TODA la
