@@ -10,7 +10,7 @@ export function LandingJoin() {
     <section id="sumate" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '72px var(--gutter)' }}>
       <GlowBackdrop palette="tienda" intensity={0.3} />
       <div className="lp-join" style={{ position: 'relative', zIndex: 1, maxWidth: 'var(--container)', margin: '0 auto', display: 'grid', gap: 28, alignItems: 'center', padding: 28, borderRadius: 'var(--radius-panel)', background: 'var(--surface)', boxShadow: 'inset 0 0 0 1px var(--border)' }}>
-        <img src="/assets/illustrations/storefront-check.png" alt="" style={{ width: '100%', maxWidth: 280, justifySelf: 'center' }} />
+        <img src="/assets/illustrations/storefront-check.webp" alt="" width={560} height={470} loading="lazy" decoding="async" style={{ width: '100%', height: 'auto', maxWidth: 280, justifySelf: 'center' }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <NeonHeading as="h2" type="tienda" size="var(--fs-h1)">SUMÁ TU COMERCIO</NeonHeading>
           <p style={{ margin: 0, font: '500 16px/1.55 var(--font-body)', color: 'var(--text-muted)', maxWidth: 480 }}>
@@ -50,7 +50,7 @@ function FooterColumn({ title, links }: { title: string; links: FooterLink[] }) 
       <p style={{ margin: '0 0 8px', font: '800 11px var(--font-body)', letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-subtle)' }}>{title}</p>
       {links.map((l) =>
         l.soon ? (
-          <span key={l.label} title="Próximamente" style={{ padding: '6px 0', font: '500 14px var(--font-body)', color: 'var(--text-muted)', opacity: 0.5, cursor: 'default' }}>{l.label}</span>
+          <span key={l.label} title="Próximamente" style={{ padding: '6px 0', font: '500 14px var(--font-body)', color: 'var(--text-subtle)', cursor: 'default' }}>{l.label}</span>
         ) : (
           <a key={l.label} href={l.href} className="footer-link" style={{ padding: '6px 0', font: '500 14px var(--font-body)', color: 'var(--text-muted)', textDecoration: 'none', transition: 'color var(--dur-base)' }}>{l.label}</a>
         ),
@@ -109,7 +109,8 @@ function ContactRow({ icon, children, href }: { icon: string; children: ReactNod
 
 export function LandingFooter() {
   return (
-    <footer style={{ position: 'relative', overflow: 'hidden', background: 'var(--surface-sunken)', borderTop: '1px solid var(--border)' }}>
+    // el espacio inferior (botones flotantes + safe-area) va dentro del footer para que tenga su mismo fondo
+    <footer style={{ position: 'relative', overflow: 'hidden', background: 'var(--surface-sunken)', borderTop: '1px solid var(--border)', paddingBottom: 'calc(32px + env(safe-area-inset-bottom, 0px))' }}>
       <div aria-hidden="true" style={{ position: 'absolute', top: -140, left: '50%', transform: 'translateX(-50%)', width: 'min(900px, 120%)', height: 280, background: 'radial-gradient(60% 100% at 50% 0%, rgba(164,116,245,.16), transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ position: 'relative', maxWidth: 'var(--container)', margin: '0 auto', padding: '56px var(--gutter) 0' }}>
         <div className="lp-footer-grid" style={{ display: 'grid', gap: 36 }}>

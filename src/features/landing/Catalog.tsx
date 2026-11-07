@@ -9,7 +9,7 @@ interface CardDef {
   type: BusinessType
   title: string
   description: string
-  /** Prefijo de las 3 imágenes del carrusel: `${slug}01..03.jpg` */
+  /** Prefijo de las 3 imágenes del carrusel: `${slug}01..03.webp` */
   slug: string
   comingSoon?: boolean
 }
@@ -20,7 +20,7 @@ const CARDS: CardDef[] = [
   { type: 'emprendimiento', title: 'EMPRENDIMIENTOS', description: 'Lo que hacen tus vecinos: comida, diseño, oficios.', slug: 'carr-emprend', comingSoon: true },
 ]
 
-const slides = (slug: string) => [1, 2, 3].map((n) => `/assets/photos/${slug}0${n}.jpg`)
+const slides = (slug: string) => [1, 2, 3].map((n) => `/assets/photos/${slug}0${n}.webp`)
 
 export function LandingCatalog({ onOpenMap }: { onOpenMap: OpenMap }) {
   return (
@@ -30,7 +30,7 @@ export function LandingCatalog({ onOpenMap }: { onOpenMap: OpenMap }) {
         <div className="catalog-headwrap" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div className="catalog-head" style={{ display: 'flex', alignItems: 'center', gap: 'clamp(12px,2vw,20px)' }}>
             <div className="catalog-art" aria-hidden="true" style={{ flex: 'none', width: 'clamp(64px,7vw,104px)', pointerEvents: 'none' }}>
-              <img src="/assets/illustrations/map-catalog-3d.png" alt="" style={{ display: 'block', width: '100%', height: 'auto', filter: 'drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 22px rgba(79,169,238,.35)) drop-shadow(0 0 36px rgba(250,110,78,.2))' }} />
+              <img src="/assets/illustrations/map-catalog-3d.webp" alt="" width={256} height={256} loading="lazy" decoding="async" style={{ display: 'block', width: '100%', height: 'auto', filter: 'drop-shadow(0 12px 14px rgba(0,0,0,.5)) drop-shadow(0 0 22px rgba(79,169,238,.35)) drop-shadow(0 0 36px rgba(250,110,78,.2))' }} />
             </div>
             <NeonHeading as="h2" style={{ lineHeight: 0.95 }}>CATÁLOGO VIRTUAL</NeonHeading>
           </div>

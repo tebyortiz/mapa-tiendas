@@ -1,0 +1,15 @@
+# Comprá Fácil
+
+> El mapa de tu ciudad: tiendas, servicios y emprendimientos de tu cuadra y alrededores, todos en un mapa. Permite buscar productos cerca de tu ubicación, ver ofertas vigentes y encontrar comercios por rubro.
+
+## Páginas principales
+
+- [Inicio](https://www.comprafacil.ar/): presentación, buscador de productos, ofertas, catálogo por rubro y comercios cercanos.
+- [Mapa](https://www.comprafacil.ar/mapa): mapa interactivo con tiendas, servicios y emprendimientos.
+- [Mapa de tiendas](https://www.comprafacil.ar/mapa?type=tienda): solo tiendas.
+- [Mapa de servicios](https://www.comprafacil.ar/mapa?type=servicio): solo servicios.
+- [Mapa de emprendimientos](https://www.comprafacil.ar/mapa?type=emprendimiento): solo emprendimientos.
+
+## Búsqueda
+
+- [Buscar un producto](https://www.comprafacil.ar/mapa?q=pan): reemplazá `pan` por el producto; requiere la ubicación del usuario para mostrar comercios cercanos.

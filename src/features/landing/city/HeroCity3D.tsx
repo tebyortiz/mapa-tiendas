@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Html, useGLTF } from '@react-three/drei'
@@ -66,9 +66,10 @@ function shuffle<T>(arr: T[]): T[] {
 type Active = { key: number; id: string; category: BusinessType; img?: string; anchor: [number, number, number] }
 
 /** Enciende un edificio destacado a la vez (mazo barajado) y muestra el avatar de producto sincronizado. */
-function Orchestrator({ registry, images, avatarLayer }: { registry: Registry; images: ProductImage[]; avatarLayer: RefObject<HTMLDivElement> }) {
+function Orchestrator({ registry, images, avatarLayer, lightRef }: { registry: Registry; images: ProductImage[]; avatarLayer: RefObject<HTMLDivElement>; lightRef: RefObject<THREE.PointLight | null> }) {
   const [active, setActive] = useState<Active | null>(null)
-  const lightRef = useRef<THREE.PointLight>(null)
+  // frameloop="demand": cada paso del glow pide su propio cuadro
+  const invalidate = useThree((s) => s.invalidate)
   const tlRef = useRef<gsap.core.Timeline | null>(null)
   const avatarEl = useRef<HTMLDivElement | null>(null)
   const avatarDone = useRef(false)
@@ -159,6 +160,7 @@ function Orchestrator({ registry, images, avatarLayer }: { registry: Registry; i
     const apply = () => {
       entry.materials.forEach((m) => (m.emissiveIntensity = glow.i))
       if (light) light.intensity = glow.i * 2.5
+      invalidate()
     }
 
     const tl = gsap.timeline({ onComplete: () => onDone.current() })
@@ -177,11 +179,10 @@ function Orchestrator({ registry, images, avatarLayer }: { registry: Registry; i
       glow.i = 0
       apply()
     }
-  }, [active, registry])
+  }, [active, registry, invalidate, lightRef])
 
   return (
     <>
-      <pointLight ref={lightRef} intensity={0} distance={5} decay={1.5} />
       {active?.img && (
     <group position={active.anchor}>
       <Html key={active.key} portal={avatarLayer} transform={false} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
@@ -201,23 +202,84 @@ function Orchestrator({ registry, images, avatarLayer }: { registry: Registry; i
   )
 }
 
-/** Inclina levemente la ciudad hacia el cursor (desktop) o la oscila con un seno (mobile / sin mouse). */
-function Parallax({ pointer, children }: { pointer: RefObject<{ x: number; y: number }>; children: React.ReactNode }) {
+type ParallaxMode = 'none' | 'mouse' | 'auto'
+
+/** Inclina levemente la ciudad hacia el cursor (desktop) o la oscila con un seno (mobile / sin mouse).
+ *  Con frameloop="demand" solo se dibuja cuando hace falta: en 'mouse', al mover el puntero y hasta que la
+ *  inclinación se asienta; en 'auto', con un ticker propio a ~30 fps (la oscilación es lenta, no se nota). */
+function Parallax({ pointer, mode, children }: { pointer: RefObject<{ x: number; y: number }>; mode: ParallaxMode; children: React.ReactNode }) {
   const group = useRef<THREE.Group>(null)
-  const mode = useMemo(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return 'none'
-    return matchMedia('(pointer: fine)').matches ? 'mouse' : 'auto'
-  }, [])
-  useFrame(({ clock }, dt) => {
+  const invalidate = useThree((s) => s.invalidate)
+  useEffect(() => {
+    if (mode === 'mouse') {
+      const onMove = () => invalidate()
+      window.addEventListener('pointermove', onMove, { passive: true })
+      return () => window.removeEventListener('pointermove', onMove)
+    }
+    if (mode !== 'auto') return
+    let raf = 0
+    let last = 0
+    const tick = (t: number) => {
+      raf = requestAnimationFrame(tick)
+      if (t - last >= 1000 / 30 - 2) {
+        last = t
+        invalidate()
+      }
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [mode, invalidate])
+  useFrame(({ clock }, delta) => {
     const g = group.current
     if (!g || mode === 'none') return
+    // tras un rato sin dibujar, delta llega enorme: se acota para que la inclinación no salte
+    const dt = Math.min(delta, 1 / 30)
     const t = clock.elapsedTime
-    const tx = mode === 'mouse' ? pointer.current.x : Math.sin(t * 0.3) * 0.5
-    const ty = mode === 'mouse' ? pointer.current.y : Math.sin(t * 0.22 + 1) * 0.5
-    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, tx * 0.14, 3, dt) // ~±4°
-    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, ty * 0.06, 3, dt) // ~±1.7°
+    const tx = (mode === 'mouse' ? pointer.current.x : Math.sin(t * 0.3) * 0.5) * 0.14 // ~±4°
+    const ty = (mode === 'mouse' ? pointer.current.y : Math.sin(t * 0.22 + 1) * 0.5) * 0.06 // ~±1.7°
+    g.rotation.y = THREE.MathUtils.damp(g.rotation.y, tx, 3, dt)
+    g.rotation.x = THREE.MathUtils.damp(g.rotation.x, ty, 3, dt)
+    // en 'mouse' se siguen pidiendo cuadros hasta alcanzar la inclinación objetivo
+    if (mode === 'mouse' && (Math.abs(g.rotation.y - tx) > 1e-4 || Math.abs(g.rotation.x - ty) > 1e-4)) invalidate()
   })
   return <group ref={group}>{children}</group>
+}
+
+/** true si WebGL corre por software (sin GPU): cada cuadro sale de la CPU y traba la página. */
+function isSoftwareRenderer(gl: THREE.WebGLRenderer): boolean {
+  try {
+    const ctx = gl.getContext()
+    const info = ctx.getExtension('WEBGL_debug_renderer_info')
+    const renderer = String(ctx.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : ctx.RENDERER))
+    return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer)
+  } catch {
+    return false
+  }
+}
+
+/** Con todas las piezas .glb ya montadas, compila los shaders en segundo plano (compileAsync) antes del
+ *  primer cuadro —en vez de compilarlos de golpe dentro de él— y recién entonces dibuja y avisa para el fade-in. */
+function ReadySignal({ compiled, onCompiled, onReady }: { compiled: boolean; onCompiled: () => void; onReady: () => void }) {
+  const gl = useThree((s) => s.gl)
+  const scene = useThree((s) => s.scene)
+  const camera = useThree((s) => s.camera)
+  const invalidate = useThree((s) => s.invalidate)
+  useEffect(() => {
+    let alive = true
+    gl.compileAsync(scene, camera)
+      .catch(() => {})
+      .then(() => alive && onCompiled())
+    return () => {
+      alive = false
+    }
+  }, [gl, scene, camera, onCompiled])
+  useEffect(() => {
+    if (!compiled) return
+    invalidate()
+    const raf = requestAnimationFrame(() => requestAnimationFrame(onReady))
+    return () => cancelAnimationFrame(raf)
+  }, [compiled, invalidate, onReady])
+  return null
 }
 
 const TILE_COLORS = { grass: '#46b57a', lot: '#59607a', plaza: '#8b90a8', road: '#8b90a8' } as const
@@ -278,6 +340,7 @@ const CAM_TARGET = new THREE.Vector3(0, 0.3, 0)
 function CameraRig() {
   const camera = useThree((s) => s.camera) as THREE.OrthographicCamera
   const size = useThree((s) => s.size)
+  const invalidate = useThree((s) => s.invalidate)
   useLayoutEffect(() => {
     /* eslint-disable react-hooks/immutability */
     camera.position.copy(CAM_POS)
@@ -302,12 +365,48 @@ function CameraRig() {
     camera.lookAt(CAM_TARGET.clone().add(shift))
     camera.updateProjectionMatrix()
     /* eslint-enable react-hooks/immutability */
-  }, [camera, size])
+    invalidate()
+  }, [camera, size, invalidate])
   return null
 }
 
-export default function HeroCity3D({ images, pointer, avatarLayer }: { images: ProductImage[]; pointer: RefObject<{ x: number; y: number }>; avatarLayer: RefObject<HTMLDivElement> }) {
+type HeroCity3DProps = {
+  images: ProductImage[]
+  pointer: RefObject<{ x: number; y: number }>
+  avatarLayer: RefObject<HTMLDivElement>
+  onReady: () => void
+}
+
+export default function HeroCity3D({ images, pointer, avatarLayer, onReady }: HeroCity3DProps) {
   const [registry] = useState<Registry>(() => new Map())
+  // Sin aceleración gráfica (WebGL por software) la escena queda estática: sin parallax automático ni glows.
+  // Se detecta sobre el mismo contexto de la escena (null = todavía no se sabe).
+  const [lowPower, setLowPower] = useState<boolean | null>(null)
+  // La luz del glow existe siempre (en 0 hasta que un edificio se enciende): si se agregara después de
+  // precompilar, three tendría que recompilar todos los shaders de golpe en el primer cuadro.
+  const lightRef = useRef<THREE.PointLight>(null)
+  const [compiled, setCompiled] = useState(false)
+  const onCompiled = useCallback(() => setCompiled(true), [])
+  const mode = useMemo<ParallaxMode>(() => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return 'none'
+    if (matchMedia('(pointer: fine)').matches) return 'mouse'
+    return lowPower === false ? 'auto' : 'none'
+  }, [lowPower])
+  const coarse = matchMedia('(pointer: coarse)').matches
+  // No se dibuja nada mientras la escena está fuera de pantalla o la pestaña está oculta
+  const [visible, setVisible] = useState(true)
+  useEffect(() => {
+    const wrap = avatarLayer.current?.parentElement
+    let onScreen = true
+    const apply = () => setVisible(onScreen && !document.hidden)
+    const io = wrap ? new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; apply() }) : null
+    if (wrap) io?.observe(wrap)
+    document.addEventListener('visibilitychange', apply)
+    return () => {
+      io?.disconnect()
+      document.removeEventListener('visibilitychange', apply)
+    }
+  }, [avatarLayer])
   // En mobile el contenedor (aspect-ratio + will-change) a veces monta con tamaño 0 y R3F no vuelve
   // a medir hasta el primer scroll/resize, dejando la escena en blanco. Forzamos la remedición al montar
   // y cada vez que el contenedor de la escena cambia de tamaño.
@@ -325,18 +424,33 @@ export default function HeroCity3D({ images, pointer, avatarLayer }: { images: P
     }
   }, [avatarLayer])
   return (
-    <Canvas flat orthographic dpr={[1, 1.75]} camera={{ position: [10, 8.5, 10], zoom: 60, near: 0.1, far: 100 }} gl={{ alpha: true, antialias: true }}>
+    <Canvas
+      flat
+      orthographic
+      frameloop={visible && compiled ? 'demand' : 'never'}
+      dpr={[1, lowPower ? 1 : coarse ? 1.5 : 1.75]}
+      camera={{ position: [10, 8.5, 10], zoom: 60, near: 0.1, far: 100 }}
+      gl={{ alpha: true, antialias: true }}
+      onCreated={({ gl }) => {
+        // en producción no se consulta el estado de compilación de cada shader (esa consulta bloquea el hilo
+        // principal hasta que la GPU termina de compilar); en desarrollo se mantiene para ver errores
+        gl.debug.checkShaderErrors = import.meta.env.DEV
+        setLowPower(isSoftwareRenderer(gl))
+      }}
+    >
       <CameraRig />
       <ambientLight color="#f0ecff" intensity={1.35} />
       <directionalLight color="#fff1e0" intensity={2.1} position={[5, 9, 6]} />
-      <Parallax pointer={pointer}>
+      <Parallax pointer={pointer} mode={visible ? mode : 'none'}>
         <Ground />
         <Fountain />
         {CITY_PIECES.map((p) => (
           <Piece key={p.id} piece={p} registry={registry} />
         ))}
-        <Orchestrator registry={registry} images={images} avatarLayer={avatarLayer} />
+        <pointLight ref={lightRef} intensity={0} distance={5} decay={1.5} />
+        {lowPower === false && <Orchestrator registry={registry} images={images} avatarLayer={avatarLayer} lightRef={lightRef} />}
       </Parallax>
+      <ReadySignal compiled={compiled} onCompiled={onCompiled} onReady={onReady} />
     </Canvas>
   )
 }

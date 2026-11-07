@@ -110,7 +110,7 @@ export const liveBusinesses = (list: Business[], now = Date.now()): Business[] =
     return deals.length === b.deals.length ? b : { ...b, deals, hasOffers: deals.length > 0 }
   })
 
-const FALLBACK_PHOTO = '/assets/photos/carr-tienda01.jpg'
+const FALLBACK_PHOTO = '/assets/photos/carr-tienda01.webp'
 
 const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 

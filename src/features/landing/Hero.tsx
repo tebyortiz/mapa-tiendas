@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import type { FormEvent, PointerEvent } from 'react'
 import { Button } from '../../components/ui/Button'
 import { ErrorBoundary } from '../../components/ui/ErrorBoundary'
@@ -38,10 +38,10 @@ const HeroCity3D = lazy(() => import('./city/HeroCity3D'))
 // Avatares de producto por categoría: naranja=tienda, azul claro=servicio, violeta=emprendimiento
 const photo = (n: string) => `/assets/photos/${n}`
 const PRODUCT_IMAGES: ProductImage[] = [
-  // tiendas: tiendasmap01..25 (06 es .png, el resto .jpg)
+  // tiendas: tiendasmap01..25 (06 es .webp, el resto .jpg)
   ...Array.from({ length: 25 }, (_, i) => {
     const n = String(i + 1).padStart(2, '0')
-    return { src: photo(`tiendasmap${n}.${n === '06' ? 'png' : 'jpg'}`), category: 'tienda' as const }
+    return { src: photo(`tiendasmap${n}.${n === '06' ? 'webp' : 'jpg'}`), category: 'tienda' as const }
   }),
   // servicios: serviciosmap01..06
   ...Array.from({ length: 6 }, (_, i) => ({ src: photo(`serviciosmap${String(i + 1).padStart(2, '0')}.jpg`), category: 'servicio' as const })),
@@ -53,6 +53,31 @@ function HeroCity() {
   const pointer = useRef({ x: 0, y: 0 })
   const avatarLayer = useRef<HTMLDivElement>(null!)
   const wrapRef = useRef<HTMLDivElement>(null)
+  // La escena 3D (three + ~40 modelos .glb) se monta recién cuando la página terminó de cargar y el
+  // navegador está libre: así no compite con el primer pintado del hero. Aparece con un fade-in.
+  const [mount3D, setMount3D] = useState(false)
+  const [ready, setReady] = useState(false)
+  const onReady = useCallback(() => setReady(true), [])
+  useEffect(() => {
+    let cancelled = false
+    let idle = 0
+    let timer = 0
+    const run = () => {
+      if (!cancelled) setMount3D(true)
+    }
+    const start = () => {
+      if (typeof window.requestIdleCallback === 'function') idle = window.requestIdleCallback(run, { timeout: 1500 })
+      else timer = window.setTimeout(run, 200)
+    }
+    if (document.readyState === 'complete') start()
+    else window.addEventListener('load', start, { once: true })
+    return () => {
+      cancelled = true
+      window.removeEventListener('load', start)
+      if (idle) cancelIdleCallback(idle)
+      clearTimeout(timer)
+    }
+  }, [])
   const onMove = (e: PointerEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect()
     pointer.current = { x: (e.clientX - r.left) / r.width - 0.5, y: (e.clientY - r.top) / r.height - 0.5 }
@@ -97,15 +122,17 @@ function HeroCity() {
         role="img"
         onPointerMove={onMove}
         onPointerLeave={() => (pointer.current = { x: 0, y: 0 })}
-        style={{ position: 'relative', width: '100%', height: '100%' }}
+        style={{ position: 'relative', width: '100%', height: '100%', opacity: ready ? 1 : 0, transition: 'opacity .9s var(--ease-out)' }}
       >
         {/* mientras carga el chunk 3D (three + drei) el área queda transparente sobre el GlowBackdrop,
-            sin captura de por medio: la escena real aparece directamente */}
-        <ErrorBoundary fallback={null}>
-          <Suspense fallback={null}>
-            <HeroCity3D images={PRODUCT_IMAGES} pointer={pointer} avatarLayer={avatarLayer} />
-          </Suspense>
-        </ErrorBoundary>
+            sin captura de por medio: la escena real aparece con un fade-in */}
+        {mount3D && (
+          <ErrorBoundary fallback={null}>
+            <Suspense fallback={null}>
+              <HeroCity3D images={PRODUCT_IMAGES} pointer={pointer} avatarLayer={avatarLayer} onReady={onReady} />
+            </Suspense>
+          </ErrorBoundary>
+        )}
       </div>
       {/* fuera de la máscara de .hero-city: los avatares pueden subir más allá de la escena */}
       <div ref={avatarLayer} className="hero-avatars" aria-hidden="true" />
@@ -160,12 +187,21 @@ export function LandingHero({ onOpenMap, onSearch }: { onOpenMap: () => void; on
             <div className="hero-basket">
               {/* onda expansiva de glow sincronizada con el destello del basket */}
               <span className="hero-basket-wave" aria-hidden="true" />
-              <img src="/assets/logo/basket-mark.png" alt="" className="hero-basket-img" style={{ display: 'block', height: 'clamp(110px,16vw,200px)', width: 'auto' }} />
+              {/* copia de la canasta con el halo blanco fijo, detrás de la original: el destello se anima
+                  solo con opacity (lo dibuja la GPU), en vez de animar filter cuadro a cuadro */}
+              <img src="/assets/logo/basket-mark.webp" alt="" aria-hidden="true" width={450} height={400} className="hero-basket-glow" />
+              <img src="/assets/logo/basket-mark.webp" alt="" width={450} height={400} fetchPriority="high" className="hero-basket-img" style={{ display: 'block', height: 'clamp(110px,16vw,200px)', width: 'auto' }} />
             </div>
             <h1 className="cf-neon cf-neon-on hero-neon" aria-label="Comprá Fácil" style={{ margin: 0, fontSize: 'clamp(44px,6vw,86px)', lineHeight: 0.95, whiteSpace: 'nowrap' }}>
               <FlickerWord text="COMPRÁ" seed={0} />
               <br />
               <FlickerWord text="FÁCIL" seed={6} />
+              {/* destello blanco del neón: capa superpuesta con el resplandor fijo que se enciende con opacity */}
+              <span className="hero-neon-flash" aria-hidden="true">
+                COMPRÁ
+                <br />
+                FÁCIL
+              </span>
             </h1>
             <div className="hero-explore">
               <div style={{ font: '800 clamp(18px,2.4vw,26px)/1.2 var(--font-body)', letterSpacing: '.12em', textTransform: 'uppercase', color: '#fff', textShadow: 'var(--neon-text-soft)', whiteSpace: 'nowrap' }}>EXPLORÁ TU CIUDAD</div>
@@ -186,7 +222,7 @@ export function LandingHero({ onOpenMap, onSearch }: { onOpenMap: () => void; on
         <div className="hero-cta">
           <form className="hero-search" onSubmit={submit} style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
             <SearchInput rainbow value={q} onChange={setQ} placeholder="¿Qué buscás cerca tuyo?" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
-            <Button htmlType="submit" icon="search" className="hero-search-btn" style={{ height: 48, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}><span className="hero-search-btn-label">Buscar</span></Button>
+            <Button htmlType="submit" icon="search" aria-label="Buscar" className="hero-search-btn"style={{ height: 48, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}><span className="hero-search-btn-label">Buscar</span></Button>
           </form>
 
           <p className="hero-desc" style={{ margin: 0, font: '700 var(--fs-body-lg)/1.5 var(--font-body)', color: 'var(--text-body)', textWrap: 'pretty' }}>
