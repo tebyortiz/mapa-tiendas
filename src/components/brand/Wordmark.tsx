@@ -33,10 +33,10 @@ function FlickerWord({ text, table }: { text: string; table: Record<number, [num
   )
 }
 
-export function Wordmark({ size = 32, withMark = true, stacked, markSrc = '/assets/logo/basket-mark.png', style, markStyle, animated, text }: WordmarkProps) {
+export function Wordmark({ size = 32, withMark = true, stacked, markSrc = '/assets/logo/basket-mark.webp', style, markStyle, animated, text }: WordmarkProps) {
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: size * 0.3, ...style }} aria-label={text ?? 'Comprá Fácil'}>
-      {withMark && <img src={markSrc} alt="" style={{ height: size * (stacked ? 2.1 : 1.35), width: 'auto', ...markStyle }} />}
+      {withMark && <img src={markSrc} alt="" width={450} height={400} decoding="async" style={{ height: size * (stacked ? 2.1 : 1.35), width: 'auto', ...markStyle }} />}
       <span className={animated ? 'cf-neon cf-neon-on' : 'cf-neon'} style={{ fontSize: size, lineHeight: 1, whiteSpace: stacked ? 'normal' : 'nowrap' }}>
         {text ? (
           text

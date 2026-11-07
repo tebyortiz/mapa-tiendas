@@ -41,14 +41,16 @@ export default function LandingPage() {
   }
 
   return (
-    <div style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom, 0px))' }}>
+    <div>
       <LandingNav onOpenMap={() => open()} search={{ query: '', onSearch: (q) => q && search(q) }} />
-      <LandingHero onOpenMap={() => open()} onSearch={search} />
-      <LandingOffers onOpenMap={open} geo={geo} />
-      <LandingCatalog onOpenMap={open} />
-      <LandingMostRequested onOpenMap={open} geo={geo} />
-      <LandingNearby onOpenMap={open} geo={geo} />
-      <LandingJoin />
+      <main>
+        <LandingHero onOpenMap={() => open()} onSearch={search} />
+        <LandingOffers onOpenMap={open} geo={geo} />
+        <LandingCatalog onOpenMap={open} />
+        <LandingMostRequested onOpenMap={open} geo={geo} />
+        <LandingNearby onOpenMap={open} geo={geo} />
+        <LandingJoin />
+      </main>
       <LandingFooter />
       {SHOP_ASSISTANT_ENABLED && <ShopAssistant />}
       <LocationStickyBar />

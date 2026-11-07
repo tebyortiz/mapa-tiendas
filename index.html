@@ -2,15 +2,28 @@
 <html lang="es-AR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/assets/logo/basket-mark.png" />
+    <link rel="icon" type="image/png" href="/assets/logo/basket-mark-64.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
+    <!-- Fuentes autoalojadas (las @font-face están en src/index.css): se precargan para que el
+         texto del hero aparezca ya con su tipografía y sin bloquear el primer pintado -->
+    <link rel="preload" href="/fonts/Manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/Glowtone-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <title>Comprá Fácil — El mapa de tu ciudad</title>
+    <meta
+      name="description"
+      content="Encontrá tiendas, servicios y emprendimientos de tu cuadra y alrededores, todos en un mapa. Buscá productos, mirá ofertas y comprá fácil, cerca tuyo."
     />
-    <title>Comprá Fácil</title>
+    <meta name="theme-color" content="#07070d" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_AR" />
+    <meta property="og:site_name" content="Comprá Fácil" />
+    <meta property="og:title" content="Comprá Fácil — El mapa de tu ciudad" />
+    <meta
+      property="og:description"
+      content="Tiendas, servicios y emprendimientos de tu cuadra y alrededores, todos en un mapa. Encontrá lo que necesitás, cerca tuyo."
+    />
+    <meta property="og:image" content="https://www.comprafacil.ar/assets/logo/basket-mark-512.png" />
+    <meta name="twitter:card" content="summary" />
   </head>
   <body>
     <div id="root"></div>
