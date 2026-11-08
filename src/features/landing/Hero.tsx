@@ -6,6 +6,11 @@ import { Icon } from '../../components/ui/Icon'
 import { SearchInput } from '../../components/ui/SearchInput'
 import { SEARCH_SUGGESTIONS } from '../../components/ui/searchSuggestions'
 import type { ProductImage } from './city/cityConfig'
+import { hasHardwareWebGL } from './city/gpu'
+import { BASKET_SRCSET } from '../../components/ui/srcSet'
+
+// la canasta del hero mide clamp(110px,16vw,200px) de alto → ancho × 1.125
+const HERO_BASKET_SIZES = 'clamp(124px, 18vw, 225px)'
 
 // [duración, delay] de las letras que parpadean, por posición (seed + índice)
 const FLICKER: Record<number, [number, number]> = { 1: [9.5, 2.1], 4: [13, 5.4], 7: [11, 8.2], 9: [15.5, 3.3] }
@@ -35,6 +40,19 @@ const EXPLORE_ICONS: [string, string, string, number, number][] = [
 
 const HeroCity3D = lazy(() => import('./city/HeroCity3D'))
 
+// Captura estática de la ciudad (WebP con transparencia, generada por scripts/capture-city.mjs).
+// width/height = proporción de la caja que encuadra la cámara (1.546): con object-fit: contain coincide con la
+// escena 3D. sizes estima el ancho de la imagen ya encajada, que en todos los casos limita el alto de la escena:
+// mobile ≈ 0.945 × ancho de la escena (170vw / 122vw); desktop = alto de la escena × 1.546, con alto =
+// min(96% del hero, 900px) y hero ≈ 100vh − 160px.
+const CITY_POSTER = {
+  base: '/assets/scenes/city',
+  widths: [960, 1280, 1600, 2160],
+  width: 1600,
+  height: 1035,
+  sizes: '(max-width: 759px) 162vw, (max-width: 959px) 116vw, min(150vw, 1391px, calc((100vh - 160px) * 1.484))',
+}
+
 // Avatares de producto por categoría: naranja=tienda, azul claro=servicio, violeta=emprendimiento
 const photo = (n: string) => `/assets/photos/${n}`
 const PRODUCT_IMAGES: ProductImage[] = [
@@ -53,17 +71,30 @@ function HeroCity() {
   const pointer = useRef({ x: 0, y: 0 })
   const avatarLayer = useRef<HTMLDivElement>(null!)
   const wrapRef = useRef<HTMLDivElement>(null)
-  // La escena 3D (three + ~40 modelos .glb) se monta recién cuando la página terminó de cargar y el
-  // navegador está libre: así no compite con el primer pintado del hero. Aparece con un fade-in.
+  // De entrada se ve la captura estática de la ciudad (liviana, aparece al instante). La escena 3D (three +
+  // 3 .glb) se monta recién cuando la página terminó de cargar y el navegador está libre, y solo si el equipo
+  // tiene GPU: sin ella, cada cuadro lo dibujaría la CPU y la página se trabaría, así que queda la captura.
+  // Cuando la escena está lista aparece con un fundido sobre la captura, que coincide con ella.
   const [mount3D, setMount3D] = useState(false)
   const [ready, setReady] = useState(false)
   const onReady = useCallback(() => setReady(true), [])
+  // la captura se oculta cuando terminó el fundido de la escena (0.9 s); se oculta de golpe (visibility),
+  // sin animar: una transición de opacity de duración 0 no la puede resolver la GPU
+  const [posterHidden, setPosterHidden] = useState(false)
+  useEffect(() => {
+    if (!ready) return
+    const t = window.setTimeout(() => setPosterHidden(true), 950)
+    return () => clearTimeout(t)
+  }, [ready])
   useEffect(() => {
     let cancelled = false
     let idle = 0
     let timer = 0
     const run = () => {
-      if (!cancelled) setMount3D(true)
+      if (cancelled) return
+      hasHardwareWebGL().then((ok) => {
+        if (ok && !cancelled) setMount3D(true)
+      })
     }
     const start = () => {
       if (typeof window.requestIdleCallback === 'function') idle = window.requestIdleCallback(run, { timeout: 1500 })
@@ -122,17 +153,34 @@ function HeroCity() {
         role="img"
         onPointerMove={onMove}
         onPointerLeave={() => (pointer.current = { x: 0, y: 0 })}
-        style={{ position: 'relative', width: '100%', height: '100%', opacity: ready ? 1 : 0, transition: 'opacity .9s var(--ease-out)' }}
+        style={{ position: 'relative', width: '100%', height: '100%' }}
       >
-        {/* mientras carga el chunk 3D (three + drei) el área queda transparente sobre el GlowBackdrop,
-            sin captura de por medio: la escena real aparece con un fade-in */}
-        {mount3D && (
-          <ErrorBoundary fallback={null}>
-            <Suspense fallback={null}>
-              <HeroCity3D images={PRODUCT_IMAGES} pointer={pointer} avatarLayer={avatarLayer} onReady={onReady} />
-            </Suspense>
-          </ErrorBoundary>
-        )}
+        {/* captura de la escena (scripts/capture-city.mjs): mismo encuadre que el 3D gracias a object-fit: contain.
+            Se oculta recién cuando terminó el fundido de la escena, para que no se vea un "bache" en el medio */}
+        <img
+          className="hero-city-poster"
+          src={`${CITY_POSTER.base}-${CITY_POSTER.widths[1]}.webp`}
+          srcSet={CITY_POSTER.widths.map((w) => `${CITY_POSTER.base}-${w}.webp ${w}w`).join(', ')}
+          sizes={CITY_POSTER.sizes}
+          width={CITY_POSTER.width}
+          height={CITY_POSTER.height}
+          alt=""
+          aria-hidden="true"
+          fetchPriority="high"
+          decoding="async"
+          draggable={false}
+          style={{ visibility: posterHidden ? 'hidden' : undefined }}
+        />
+        {/* will-change: la capa de la escena va en su propia capa de la GPU y el fundido no repinta la página */}
+        <div style={{ position: 'absolute', inset: 0, opacity: ready ? 1 : 0, transition: 'opacity .9s var(--ease-out)', willChange: 'opacity' }}>
+          {mount3D && (
+            <ErrorBoundary fallback={null}>
+              <Suspense fallback={null}>
+                <HeroCity3D images={PRODUCT_IMAGES} pointer={pointer} avatarLayer={avatarLayer} onReady={onReady} />
+              </Suspense>
+            </ErrorBoundary>
+          )}
+        </div>
       </div>
       {/* fuera de la máscara de .hero-city: los avatares pueden subir más allá de la escena */}
       <div ref={avatarLayer} className="hero-avatars" aria-hidden="true" />
@@ -189,8 +237,9 @@ export function LandingHero({ onOpenMap, onSearch }: { onOpenMap: () => void; on
               <span className="hero-basket-wave" aria-hidden="true" />
               {/* copia de la canasta con el halo blanco fijo, detrás de la original: el destello se anima
                   solo con opacity (lo dibuja la GPU), en vez de animar filter cuadro a cuadro */}
-              <img src="/assets/logo/basket-mark.webp" alt="" aria-hidden="true" width={450} height={400} className="hero-basket-glow" />
-              <img src="/assets/logo/basket-mark.webp" alt="" width={450} height={400} fetchPriority="high" className="hero-basket-img" style={{ display: 'block', height: 'clamp(110px,16vw,200px)', width: 'auto' }} />
+              {/* mismo srcSet/sizes en las dos: el navegador baja una sola imagen. Ancho = alto × 1.125 */}
+              <img src="/assets/logo/basket-mark.webp" srcSet={BASKET_SRCSET} sizes={HERO_BASKET_SIZES} alt="" aria-hidden="true" width={450} height={400} className="hero-basket-glow" />
+              <img src="/assets/logo/basket-mark.webp" srcSet={BASKET_SRCSET} sizes={HERO_BASKET_SIZES} alt="" width={450} height={400} fetchPriority="high" className="hero-basket-img" style={{ display: 'block', height: 'clamp(110px,16vw,200px)', width: 'auto' }} />
             </div>
             <h1 className="cf-neon cf-neon-on hero-neon" aria-label="Comprá Fácil" style={{ margin: 0, fontSize: 'clamp(44px,6vw,86px)', lineHeight: 0.95, whiteSpace: 'nowrap' }}>
               <FlickerWord text="COMPRÁ" seed={0} />
@@ -207,8 +256,11 @@ export function LandingHero({ onOpenMap, onSearch }: { onOpenMap: () => void; on
               <div style={{ font: '800 clamp(18px,2.4vw,26px)/1.2 var(--font-body)', letterSpacing: '.12em', textTransform: 'uppercase', color: '#fff', textShadow: 'var(--neon-text-soft)', whiteSpace: 'nowrap' }}>EXPLORÁ TU CIUDAD</div>
               <div className="hero-explore-icons">
                 {EXPLORE_ICONS.map(([icon, c, label, dur, delay], i) => (
-                  <span key={icon} className="hero-explore-icon" style={{ ['--c' as string]: c, animationDuration: `0.9s, ${dur}s`, animationDelay: `${i * 220 + 500}ms, ${delay}s` }}>
-                    <Icon name={icon} size={26} color={c} label={label} />
+                  // capa de afuera: encendido del tubo; capa de adentro: resplandor + parpadeo periódico
+                  <span key={icon} className="hero-explore-icon" style={{ ['--c' as string]: c, animationDuration: '0.9s', animationDelay: `${i * 220 + 500}ms` }}>
+                    <span className="hero-explore-icon-glow" style={{ animationDuration: `${dur}s`, animationDelay: `${delay}s` }}>
+                      <Icon name={icon} size={26} color={c} label={label} />
+                    </span>
                   </span>
                 ))}
               </div>
@@ -221,7 +273,7 @@ export function LandingHero({ onOpenMap, onSearch }: { onOpenMap: () => void; on
         {/* Consola: buscador arriba (protagonista sobre el mapa) y descripción debajo */}
         <div className="hero-cta">
           <form className="hero-search" onSubmit={submit} style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
-            <SearchInput rainbow value={q} onChange={setQ} placeholder="¿Qué buscás cerca tuyo?" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
+            <SearchInput rainbow flowingBorder value={q} onChange={setQ} placeholder="¿Qué buscás cerca tuyo?" suggestions={SEARCH_SUGGESTIONS} style={{ flex: 1, minWidth: 0 }} />
             <Button htmlType="submit" icon="search" aria-label="Buscar" className="hero-search-btn"style={{ height: 48, flex: 'none', color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)' }}><span className="hero-search-btn-label">Buscar</span></Button>
           </form>
 

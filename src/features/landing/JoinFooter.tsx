@@ -4,13 +4,14 @@ import { NeonHeading } from '../../components/brand/NeonHeading'
 import { Wordmark } from '../../components/brand/Wordmark'
 import { Button } from '../../components/ui/Button'
 import { Icon } from '../../components/ui/Icon'
+import { srcSet } from '../../components/ui/srcSet'
 
 export function LandingJoin() {
   return (
     <section id="sumate" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '72px var(--gutter)' }}>
       <GlowBackdrop palette="tienda" intensity={0.3} />
       <div className="lp-join" style={{ position: 'relative', zIndex: 1, maxWidth: 'var(--container)', margin: '0 auto', display: 'grid', gap: 28, alignItems: 'center', padding: 28, borderRadius: 'var(--radius-panel)', background: 'var(--surface)', boxShadow: 'inset 0 0 0 1px var(--border)' }}>
-        <img src="/assets/illustrations/storefront-check.webp" alt="" width={560} height={470} loading="lazy" decoding="async" style={{ width: '100%', height: 'auto', maxWidth: 280, justifySelf: 'center' }} />
+        <img src="/assets/illustrations/storefront-check.webp" srcSet={srcSet('/assets/illustrations/storefront-check', [280, 420], 560)} sizes="280px" alt="" width={560} height={470} loading="lazy" decoding="async" style={{ width: '100%', height: 'auto', maxWidth: 280, justifySelf: 'center' }} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <NeonHeading as="h2" type="tienda" size="var(--fs-h1)">SUMÁ TU COMERCIO</NeonHeading>
           <p style={{ margin: 0, font: '500 16px/1.55 var(--font-body)', color: 'var(--text-muted)', maxWidth: 480 }}>
@@ -147,7 +148,7 @@ export function LandingFooter() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ font: '700 10px var(--font-body)', letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--text-subtle)', whiteSpace: 'nowrap' }}>Sitio creado por</span>
             <a href="https://clarusrock.com" target="_blank" rel="noopener noreferrer" aria-label="Clarus Rock" style={{ display: 'inline-flex' }}>
-              <img src="/clarus-rock-white.svg" alt="Clarus Rock" className="footer-clarus" style={{ height: 30, width: 'auto', objectFit: 'contain', opacity: 0.75, transition: 'opacity var(--dur-base)' }} />
+              <img src="/clarus-rock-white.svg" alt="Clarus Rock" width={88} height={30} loading="lazy" decoding="async" className="footer-clarus" style={{ height: 30, width: 'auto', objectFit: 'contain', opacity: 0.75, transition: 'opacity var(--dur-base)' }} />
             </a>
           </div>
         </div>

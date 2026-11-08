@@ -1,43 +1,59 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { RefObject } from 'react'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Html, useGLTF } from '@react-three/drei'
-import { gsap } from 'gsap'
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { BusinessType } from '../../../data/types'
-import { CITY_PIECES, GROUND_TILES, FOUNTAIN_POSITION, cellPosition, FEATURED, pieceUrl, piecePosition, glowColor } from './cityConfig'
-import type { CityPiece, ProductImage } from './cityConfig'
+import { CITY_LAYERS, CITY_PIECES, GROUND_TILES, FOUNTAIN_POSITION, cellPosition, FEATURED, layerUrl, pieceLayer, piecePosition, glowColor } from './cityConfig'
+import type { CityLayer, CityPiece, GroundKind, ProductImage } from './cityConfig'
 
-// Todas las piezas únicas se precargan una sola vez
-for (const tipo of new Set(CITY_PIECES.map((p) => p.tipo))) useGLTF.preload(pieceUrl(tipo))
+// La ciudad viene en 3 .glb, uno por capa (calles, árboles, edificios): ver scripts/build-city-models.mjs.
+// Se cargan con el GLTFLoader de three (sin drei: no hacen falta los decodificadores Draco/Meshopt que trae).
+const LAYER_URLS = CITY_LAYERS.map(layerUrl)
+useLoader.preload(GLTFLoader, LAYER_URLS)
+
+// Solo en desarrollo, con ?city-capture: escena sin glows ni avatares y con el buffer conservado, para
+// sacar la captura estática del hero (scripts/capture-city.mjs). En producción esto se elimina del bundle.
+const CAPTURE = import.meta.env.DEV && new URLSearchParams(location.search).has('city-capture')
+
+// Las piezas se montan por tandas, en el orden de las capas: así ninguna tarea del hilo principal se
+// alarga (cada tanda es un commit corto de React) y el navegador sigue respondiendo mientras se arma.
+const ORDERED_PIECES = [...CITY_PIECES].sort((a, b) => CITY_LAYERS.indexOf(pieceLayer(a.tipo)) - CITY_LAYERS.indexOf(pieceLayer(b.tipo)))
+const BATCH = 16
 
 type FeaturedEntry = { category: BusinessType; materials: THREE.MeshStandardMaterial[]; anchor: [number, number, number] }
 type Registry = Map<string, FeaturedEntry>
+type Layers = Record<CityLayer, THREE.Object3D>
 
-function Piece({ piece, registry }: { piece: CityPiece; registry: Registry }) {
-  const { scene } = useGLTF(pieceUrl(piece.tipo))
+/** Los 3 .glb de la ciudad, como capa → escena. Suspende hasta que están los tres. */
+function useCityLayers(): Layers {
+  const gltfs = useLoader(GLTFLoader, LAYER_URLS)
+  return useMemo(() => ({ roads: gltfs[0].scene, nature: gltfs[1].scene, buildings: gltfs[2].scene }), [gltfs])
+}
+
+function Piece({ piece, layers, registry }: { piece: CityPiece; layers: Layers; registry: Registry }) {
   const category = FEATURED[piece.id]
   const position = piecePosition(piece)
   const scale = piece.escala ?? 1
 
   const { object, materials, height } = useMemo(() => {
-    // clone(true) comparte geometría y material con el original de Kenney
-    const object = scene.clone(true)
+    const source = layers[pieceLayer(piece.tipo)].getObjectByName(`piece_${piece.tipo}`)
+    // clone(true) comparte geometría y material (uno por kit) con el original
+    const object = source ? source.clone(true) : new THREE.Group()
     const materials: THREE.MeshStandardMaterial[] = []
-    if (category) {
-      // solo los destacados clonan material, para animar emissive sin afectar al resto
-      object.traverse((o) => {
-        const m = o as THREE.Mesh
-        if (!m.isMesh) return
-        const mat = (m.material as THREE.MeshStandardMaterial).clone()
-        mat.emissiveIntensity = 0
-        mat.emissiveMap = mat.map // el glow conserva el detalle (ventanas) en vez de teñir todo plano
-        m.material = mat
-        materials.push(mat)
-      })
-    }
+    if (!category) return { object, materials, height: 0 }
+    // solo los destacados clonan material, para animar emissive sin afectar al resto
+    object.traverse((o) => {
+      const m = o as THREE.Mesh
+      if (!m.isMesh) return
+      const mat = (m.material as THREE.MeshStandardMaterial).clone()
+      mat.emissiveIntensity = 0
+      mat.emissiveMap = mat.map // el glow conserva el detalle (ventanas) en vez de teñir todo plano
+      m.material = mat
+      materials.push(mat)
+    })
     return { object, materials, height: new THREE.Box3().setFromObject(object).max.y }
-  }, [scene, category])
+  }, [layers, piece.tipo, category])
 
   useLayoutEffect(() => {
     if (!category) return
@@ -65,24 +81,72 @@ function shuffle<T>(arr: T[]): T[] {
 
 type Active = { key: number; id: string; category: BusinessType; img?: string; anchor: [number, number, number] }
 
+// Encendido tipo neón del edificio: [intensidad, duración, inicio] en segundos, lineal entre pasos.
+// Parpadeos que suben → hold → parpadeo y apagado (1.6 s en total).
+const GLOW_STEPS: [number, number, number][] = [
+  [0.9, 0.08, 0], [0.15, 0.07, 0.08], [1.7, 0.08, 0.15], [0.5, 0.07, 0.23], [2.2, 0.15, 0.3],
+  [1.2, 0.1, 1.0], [2.2, 0.08, 1.1], [0.3, 0.12, 1.18], [0, 0.3, 1.3],
+]
+const GLOW_END = Math.max(...GLOW_STEPS.map(([, d, at]) => at + d))
+function glowAt(t: number): number {
+  let from = 0
+  let value = 0
+  for (const [to, dur, at] of GLOW_STEPS) {
+    if (t < at) break
+    value = from + (to - from) * Math.min(1, (t - at) / dur)
+    from = to
+  }
+  return value
+}
+// Avatar: sube 120px en 2.5 s desacelerando (cuadrática) y se mantiene opaco casi todo el trayecto;
+// recién al llegar arriba se desvanece rápido (cúbica, 0.45 s desde 2.05 s)
+const AVATAR_RISE = 2.5
+const AVATAR_FADE_AT = 2.05
+const AVATAR_FADE = 0.45
+const easeOutQuad = (p: number) => 1 - (1 - p) * (1 - p)
+const easeInCubic = (p: number) => p * p * p
+const clamp01 = (p: number) => Math.min(1, Math.max(0, p))
+
+/** Crea el avatar (círculo con la foto del producto) dentro de la capa de avatares, fuera del canvas. */
+function createAvatar(src: string) {
+  const wrap = document.createElement('div')
+  // oculto hasta que el primer cuadro lo ubica sobre su edificio (ver place)
+  wrap.style.cssText = 'position:absolute;left:0;top:0;z-index:10;pointer-events:none;will-change:transform;visibility:hidden'
+  const circle = document.createElement('div')
+  circle.style.cssText = 'width:44px;height:44px;border-radius:50%;overflow:hidden;opacity:0;will-change:transform,opacity'
+  const img = document.createElement('img')
+  img.src = src
+  img.alt = ''
+  img.draggable = false
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block'
+  circle.appendChild(img)
+  wrap.appendChild(circle)
+  return { wrap, circle }
+}
+
+const _v = new THREE.Vector3()
+
 /** Enciende un edificio destacado a la vez (mazo barajado) y muestra el avatar de producto sincronizado. */
 function Orchestrator({ registry, images, avatarLayer, lightRef }: { registry: Registry; images: ProductImage[]; avatarLayer: RefObject<HTMLDivElement>; lightRef: RefObject<THREE.PointLight | null> }) {
   const [active, setActive] = useState<Active | null>(null)
   // frameloop="demand": cada paso del glow pide su propio cuadro
   const invalidate = useThree((s) => s.invalidate)
-  const tlRef = useRef<gsap.core.Timeline | null>(null)
-  const avatarEl = useRef<HTMLDivElement | null>(null)
-  const avatarDone = useRef(false)
-  // <Html> monta su contenido de forma asíncrona: el avatar se engancha al timeline cuando su ref existe
-  const attachAvatar = () => {
-    const tl = tlRef.current
-    const el = avatarEl.current
-    if (!tl || !el || avatarDone.current) return
-    avatarDone.current = true
-    // el círculo sube lento y se mantiene opaco casi todo el trayecto; recién al llegar arriba se desvanece rápido
-    gsap.set(el, { y: 0, opacity: 1 })
-    tl.to(el, { y: -120, duration: 2.5, ease: 'power1.out' }, 0).to(el, { opacity: 0, duration: 0.45, ease: 'power2.in' }, 2.05)
-  }
+  const camera = useThree((s) => s.camera)
+  const size = useThree((s) => s.size)
+  // punto 3D sobre el edificio (dentro del grupo del parallax) y el avatar que lo sigue en pantalla
+  const anchorRef = useRef<THREE.Group>(null)
+  const avatarRef = useRef<HTMLDivElement | null>(null)
+  // proyecta el ancla a la pantalla y centra el avatar ahí (la capa de avatares mide lo mismo que el canvas)
+  const place = useCallback(() => {
+    const g = anchorRef.current
+    const el = avatarRef.current
+    if (!g || !el) return
+    g.getWorldPosition(_v).project(camera)
+    el.style.transform = `translate3d(${((_v.x + 1) / 2) * size.width}px, ${((1 - _v.y) / 2) * size.height}px, 0) translate(-50%, -50%)`
+    el.style.visibility = 'visible'
+  }, [camera, size])
+  // cada cuadro (glow o parallax) reubica el avatar
+  useFrame(place)
   const last = useRef<string>('')
   const count = useRef(0)
   const imagesRef = useRef(images)
@@ -95,7 +159,7 @@ function Orchestrator({ registry, images, avatarLayer, lightRef }: { registry: R
   }, [images])
 
   useEffect(() => {
-    let timer: gsap.core.Tween | null = null
+    let timer = 0
     // saca la siguiente imagen de la categoría sin repetir hasta agotar el mazo
     const nextImage = (category: BusinessType): string | undefined => {
       const decks = imageDecks.current
@@ -133,7 +197,7 @@ function Orchestrator({ registry, images, avatarLayer, lightRef }: { registry: R
       setActive({ key: ++count.current, id, category, img: nextImage(category), anchor: entry.anchor })
     }
     const schedule = () => {
-      timer = gsap.delayedCall(rand(1.8, 3.2), draw)
+      timer = window.setTimeout(draw, rand(1800, 3200))
     }
     onDone.current = () => {
       setActive(null)
@@ -141,7 +205,7 @@ function Orchestrator({ registry, images, avatarLayer, lightRef }: { registry: R
     }
     schedule()
     return () => {
-      timer?.kill()
+      clearTimeout(timer)
     }
   }, [registry])
 
@@ -163,43 +227,41 @@ function Orchestrator({ registry, images, avatarLayer, lightRef }: { registry: R
       invalidate()
     }
 
-    const tl = gsap.timeline({ onComplete: () => onDone.current() })
-    // encendido tipo neón: parpadeos que suben → hold → parpadeo y apagado (1.6s en total)
-    const steps: [number, number, number][] = [
-      [0.9, 0.08, 0], [0.15, 0.07, 0.08], [1.7, 0.08, 0.15], [0.5, 0.07, 0.23], [2.2, 0.15, 0.3],
-      [1.2, 0.1, 1.0], [2.2, 0.08, 1.1], [0.3, 0.12, 1.18], [0, 0.3, 1.3],
-    ]
-    for (const [i, duration, at] of steps) tl.to(glow, { i, duration, ease: 'none', onUpdate: apply }, at)
-    avatarDone.current = false
-    tlRef.current = tl
-    attachAvatar()
+    const avatar = active.img ? createAvatar(active.img) : null
+    if (avatar) {
+      // lo posiciona el useFrame(place) del cuadro que pide apply()
+      avatarLayer.current?.appendChild(avatar.wrap)
+      avatarRef.current = avatar.wrap
+    }
+    // con avatar la secuencia dura lo que su subida; sin avatar, lo que el glow
+    const end = avatar ? AVATAR_RISE : GLOW_END
+    const start = performance.now()
+    let raf = 0
+    const tick = (now: number) => {
+      const t = (now - start) / 1000
+      glow.i = t < GLOW_END ? glowAt(t) : 0
+      apply()
+      if (avatar) {
+        const y = -120 * easeOutQuad(clamp01(t / AVATAR_RISE))
+        const opacity = 1 - easeInCubic(clamp01((t - AVATAR_FADE_AT) / AVATAR_FADE))
+        avatar.circle.style.transform = `translateY(${y.toFixed(1)}px)`
+        avatar.circle.style.opacity = opacity.toFixed(3)
+      }
+      if (t < end) raf = requestAnimationFrame(tick)
+      else onDone.current()
+    }
+    raf = requestAnimationFrame(tick)
     return () => {
-      tl.kill()
-      tlRef.current = null
+      cancelAnimationFrame(raf)
+      avatar?.wrap.remove()
+      if (avatarRef.current === avatar?.wrap) avatarRef.current = null
       glow.i = 0
       apply()
     }
-  }, [active, registry, invalidate, lightRef])
+  }, [active, registry, invalidate, lightRef, avatarLayer])
 
-  return (
-    <>
-      {active?.img && (
-    <group position={active.anchor}>
-      <Html key={active.key} portal={avatarLayer} transform={false} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-        <div
-          ref={(el) => {
-            avatarEl.current = el
-            attachAvatar()
-          }}
-          style={{ opacity: 0, width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', background: 'transparent' }}
-        >
-          <img src={active.img} alt="" draggable={false} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        </div>
-      </Html>
-    </group>
-      )}
-    </>
-  )
+  // ancla invisible sobre el edificio encendido: hereda la inclinación del parallax, así el avatar la acompaña
+  return active ? <group key={active.key} ref={anchorRef} position={active.anchor} /> : null
 }
 
 type ParallaxMode = 'none' | 'mouse' | 'auto'
@@ -245,18 +307,6 @@ function Parallax({ pointer, mode, children }: { pointer: RefObject<{ x: number;
   return <group ref={group}>{children}</group>
 }
 
-/** true si WebGL corre por software (sin GPU): cada cuadro sale de la CPU y traba la página. */
-function isSoftwareRenderer(gl: THREE.WebGLRenderer): boolean {
-  try {
-    const ctx = gl.getContext()
-    const info = ctx.getExtension('WEBGL_debug_renderer_info')
-    const renderer = String(ctx.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : ctx.RENDERER))
-    return /swiftshader|llvmpipe|softpipe|software|basic render/i.test(renderer)
-  } catch {
-    return false
-  }
-}
-
 /** Con todas las piezas .glb ya montadas, compila los shaders en segundo plano (compileAsync) antes del
  *  primer cuadro —en vez de compilarlos de golpe dentro de él— y recién entonces dibuja y avisa para el fade-in. */
 function ReadySignal({ compiled, onCompiled, onReady }: { compiled: boolean; onCompiled: () => void; onReady: () => void }) {
@@ -286,24 +336,51 @@ const TILE_COLORS = { grass: '#46b57a', lot: '#59607a', plaza: '#8b90a8', road: 
 
 /** Base del pueblo: una baldosa por celda no vacía (césped, lote, plaza o asfalto), con el borde irregular del plano.
  *  La baldosa de asfalto va un poco más abajo, justo debajo de la pieza de calle, para rellenar las esquinas
- *  transparentes de las curvas sin superponerse con la superficie de la calle. */
+ *  transparentes de las curvas sin superponerse con la superficie de la calle.
+ *  Un InstancedMesh por tipo de suelo: 4 objetos (y 4 dibujados por cuadro) en vez de ~125. */
 function Ground() {
-  const geo = useMemo(() => new THREE.BoxGeometry(1, 0.1, 1), [])
-  const mats = useMemo(
-    () => ({
-      grass: new THREE.MeshStandardMaterial({ color: TILE_COLORS.grass }),
-      lot: new THREE.MeshStandardMaterial({ color: TILE_COLORS.lot }),
-      plaza: new THREE.MeshStandardMaterial({ color: TILE_COLORS.plaza }),
-      road: new THREE.MeshStandardMaterial({ color: TILE_COLORS.road }),
-    }),
-    [],
-  )
+  const meshes = useMemo(() => {
+    const geo = new THREE.BoxGeometry(1, 0.1, 1)
+    const m = new THREE.Matrix4()
+    return (Object.keys(TILE_COLORS) as GroundKind[]).map((kind) => {
+      const tiles = GROUND_TILES.filter((t) => t.kind === kind)
+      const mesh = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ color: TILE_COLORS[kind] }), tiles.length)
+      tiles.forEach((t, i) => {
+        const [x, , z] = cellPosition(t.fila, t.columna)
+        mesh.setMatrixAt(i, m.makeTranslation(x, kind === 'road' ? -0.07 : -0.05, z))
+      })
+      mesh.computeBoundingSphere()
+      return mesh
+    })
+  }, [])
   return (
     <>
-      {GROUND_TILES.map((t) => {
-        const [x, , z] = cellPosition(t.fila, t.columna)
-        return <mesh key={`${t.fila}-${t.columna}`} geometry={geo} material={mats[t.kind]} position={[x, t.kind === 'road' ? -0.07 : -0.05, z]} />
-      })}
+      {meshes.map((mesh) => (
+        <primitive key={mesh.uuid} object={mesh} />
+      ))}
+    </>
+  )
+}
+
+/** Monta las piezas de a tandas (calles → árboles → edificios). Cada tanda es un commit corto y entre una y
+ *  otra el navegador queda libre; al terminar avisa con onBuilt. */
+function City({ registry, onBuilt }: { registry: Registry; onBuilt: () => void }) {
+  const layers = useCityLayers()
+  const [count, setCount] = useState(0)
+  useEffect(() => {
+    if (count >= ORDERED_PIECES.length) {
+      onBuilt()
+      return
+    }
+    // setTimeout (y no rAF): con frameloop="never" no hay cuadros, y así la siguiente tanda va en otra tarea
+    const t = setTimeout(() => setCount((c) => Math.min(c + BATCH, ORDERED_PIECES.length)), 0)
+    return () => clearTimeout(t)
+  }, [count, onBuilt])
+  return (
+    <>
+      {ORDERED_PIECES.slice(0, count).map((p) => (
+        <Piece key={p.id} piece={p} layers={layers} registry={registry} />
+      ))}
     </>
   )
 }
@@ -356,7 +433,12 @@ function CameraRig() {
         minY = Math.min(minY, v.y); maxY = Math.max(maxY, v.y)
       }
     }
-    camera.zoom = Math.min(size.width / (maxX - minX + 0.6), size.height / (maxY - minY + 1.4))
+    // el pueblo (con un margen) ocupa una caja de fitW × fitH unidades, centrada en el canvas: la captura
+    // estática del hero se saca con esa misma proporción para coincidir con la escena (object-fit: contain)
+    const fitW = maxX - minX + 0.6
+    const fitH = maxY - minY + 1.4
+    if (CAPTURE) Object.assign(window, { __cityFit: [fitW, fitH] })
+    camera.zoom = Math.min(size.width / fitW, size.height / fitH)
     // centra el pueblo en el canvas moviendo cámara y objetivo en su plano
     const right = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 0)
     const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1)
@@ -379,19 +461,18 @@ type HeroCity3DProps = {
 
 export default function HeroCity3D({ images, pointer, avatarLayer, onReady }: HeroCity3DProps) {
   const [registry] = useState<Registry>(() => new Map())
-  // Sin aceleración gráfica (WebGL por software) la escena queda estática: sin parallax automático ni glows.
-  // Se detecta sobre el mismo contexto de la escena (null = todavía no se sabe).
-  const [lowPower, setLowPower] = useState<boolean | null>(null)
+  // Este componente solo se monta si el equipo tiene GPU (ver gpu.ts); sin ella el hero queda con la captura.
   // La luz del glow existe siempre (en 0 hasta que un edificio se enciende): si se agregara después de
   // precompilar, three tendría que recompilar todos los shaders de golpe en el primer cuadro.
   const lightRef = useRef<THREE.PointLight>(null)
+  const [built, setBuilt] = useState(false)
+  const onBuilt = useCallback(() => setBuilt(true), [])
   const [compiled, setCompiled] = useState(false)
   const onCompiled = useCallback(() => setCompiled(true), [])
   const mode = useMemo<ParallaxMode>(() => {
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return 'none'
-    if (matchMedia('(pointer: fine)').matches) return 'mouse'
-    return lowPower === false ? 'auto' : 'none'
-  }, [lowPower])
+    if (CAPTURE || matchMedia('(prefers-reduced-motion: reduce)').matches) return 'none'
+    return matchMedia('(pointer: fine)').matches ? 'mouse' : 'auto'
+  }, [])
   const coarse = matchMedia('(pointer: coarse)').matches
   // No se dibuja nada mientras la escena está fuera de pantalla o la pestaña está oculta
   const [visible, setVisible] = useState(true)
@@ -428,14 +509,13 @@ export default function HeroCity3D({ images, pointer, avatarLayer, onReady }: He
       flat
       orthographic
       frameloop={visible && compiled ? 'demand' : 'never'}
-      dpr={[1, lowPower ? 1 : coarse ? 1.5 : 1.75]}
+      dpr={[1, coarse ? 1.5 : 1.75]}
       camera={{ position: [10, 8.5, 10], zoom: 60, near: 0.1, far: 100 }}
-      gl={{ alpha: true, antialias: true }}
+      gl={{ alpha: true, antialias: true, preserveDrawingBuffer: CAPTURE }}
       onCreated={({ gl }) => {
         // en producción no se consulta el estado de compilación de cada shader (esa consulta bloquea el hilo
         // principal hasta que la GPU termina de compilar); en desarrollo se mantiene para ver errores
         gl.debug.checkShaderErrors = import.meta.env.DEV
-        setLowPower(isSoftwareRenderer(gl))
       }}
     >
       <CameraRig />
@@ -444,13 +524,11 @@ export default function HeroCity3D({ images, pointer, avatarLayer, onReady }: He
       <Parallax pointer={pointer} mode={visible ? mode : 'none'}>
         <Ground />
         <Fountain />
-        {CITY_PIECES.map((p) => (
-          <Piece key={p.id} piece={p} registry={registry} />
-        ))}
+        <City registry={registry} onBuilt={onBuilt} />
         <pointLight ref={lightRef} intensity={0} distance={5} decay={1.5} />
-        {lowPower === false && <Orchestrator registry={registry} images={images} avatarLayer={avatarLayer} lightRef={lightRef} />}
+        {built && !CAPTURE && <Orchestrator registry={registry} images={images} avatarLayer={avatarLayer} lightRef={lightRef} />}
       </Parallax>
-      <ReadySignal compiled={compiled} onCompiled={onCompiled} onReady={onReady} />
+      {built && <ReadySignal compiled={compiled} onCompiled={onCompiled} onReady={onReady} />}
     </Canvas>
   )
 }

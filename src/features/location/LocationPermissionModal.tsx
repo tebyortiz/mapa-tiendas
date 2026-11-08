@@ -44,21 +44,25 @@ export function LocationPermissionModal() {
         onClick={(e) => e.stopPropagation()}
         style={{ position: 'relative', width: '100%', maxWidth: 440, animation: 'cf-rise var(--dur-slow) var(--ease-out)' }}
       >
-        {/* Halo/glow que emana de los bordes: mismo gradiente del borde, fluyendo en sync (cf-glow-slide ≡ cf-border-slide) */}
+        {/* Halo/glow que emana de los bordes: mismo gradiente del borde, fluyendo en sync (misma franja .cf-flow-strip) */}
         {/* El halo se recorta con máscara para que solo se vea por fuera: el interior del modal es vidrio translúcido */}
         <span
           aria-hidden="true"
           className="cf-ring-mask"
           style={{ position: 'absolute', inset: -80, padding: 80, borderRadius: 118, zIndex: 0 }}
         >
-          <span style={{ position: 'absolute', inset: 77, borderRadius: 42, background: 'linear-gradient(90deg, var(--cf-rb-coral), var(--cf-rb-sky), var(--cf-rb-violet), var(--cf-rb-coral))', backgroundSize: '200% 100%', filter: 'blur(26px)', opacity: 0.8, animation: 'cf-glow-slide 5s linear infinite' }} />
+          <span style={{ position: 'absolute', inset: 77, borderRadius: 42, overflow: 'hidden', filter: 'blur(26px)', opacity: 0.8 }}>
+            <span className="cf-flow-strip" />
+          </span>
         </span>
         {/* Borde arcoíris animado: anillo enmascarado (no un fondo border-box) para no teñir el vidrio */}
         <span
           aria-hidden="true"
           className="cf-ring-mask"
-          style={{ position: 'absolute', inset: 0, padding: 2.5, borderRadius: 38, zIndex: 2, background: 'linear-gradient(90deg, var(--cf-rb-coral), var(--cf-rb-sky), var(--cf-rb-violet), var(--cf-rb-coral))', backgroundSize: '200% 100%', animation: 'cf-glow-slide 5s linear infinite' }}
-        />
+          style={{ position: 'absolute', inset: 0, padding: 2.5, borderRadius: 38, zIndex: 2, overflow: 'hidden' }}
+        >
+          <span className="cf-flow-strip" />
+        </span>
         <button
           type="button"
           onClick={() => closeLocationModal()}

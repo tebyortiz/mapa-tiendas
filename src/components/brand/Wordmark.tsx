@@ -1,4 +1,5 @@
 import type { CSSProperties } from 'react'
+import { BASKET_SRCSET } from '../ui/srcSet'
 
 export interface WordmarkProps {
   /** Tamaño de fuente del wordmark en px */
@@ -33,10 +34,27 @@ function FlickerWord({ text, table }: { text: string; table: Record<number, [num
   )
 }
 
-export function Wordmark({ size = 32, withMark = true, stacked, markSrc = '/assets/logo/basket-mark.webp', style, markStyle, animated, text }: WordmarkProps) {
+const DEFAULT_MARK = '/assets/logo/basket-mark.webp'
+
+export function Wordmark({ size = 32, withMark = true, stacked, markSrc = DEFAULT_MARK, style, markStyle, animated, text }: WordmarkProps) {
+  const markH = size * (stacked ? 2.1 : 1.35)
+  // con la canasta por defecto se ofrecen versiones reducidas; el ancho mostrado es alto × 1.125 (el navbar
+  // puede forzar ~42px de alto por CSS, de ahí el mínimo)
+  const responsive = markSrc === DEFAULT_MARK
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: size * 0.3, ...style }} aria-label={text ?? 'Comprá Fácil'}>
-      {withMark && <img src={markSrc} alt="" width={450} height={400} decoding="async" style={{ height: size * (stacked ? 2.1 : 1.35), width: 'auto', ...markStyle }} />}
+      {withMark && (
+        <img
+          src={markSrc}
+          srcSet={responsive ? BASKET_SRCSET : undefined}
+          sizes={responsive ? `${Math.ceil(Math.max(markH, 42) * 1.125)}px` : undefined}
+          alt=""
+          width={450}
+          height={400}
+          decoding="async"
+          style={{ height: markH, width: 'auto', ...markStyle }}
+        />
+      )}
       <span className={animated ? 'cf-neon cf-neon-on' : 'cf-neon'} style={{ fontSize: size, lineHeight: 1, whiteSpace: stacked ? 'normal' : 'nowrap' }}>
         {text ? (
           text

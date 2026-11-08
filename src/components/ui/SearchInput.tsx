@@ -14,10 +14,12 @@ export interface SearchInputProps {
   rainbow?: boolean
   /** Si se pasa, el placeholder alterna entre la pregunta (placeholder) y estas búsquedas, tipeándose y borrándose. */
   suggestions?: string[]
+  /** Agrega el anillo con el gradiente que fluye (.cf-flow-ring); el CSS del contenedor le saca el borde propio. */
+  flowingBorder?: boolean
   style?: CSSProperties
 }
 
-export function SearchInput({ value, defaultValue, onChange, placeholder = 'Buscar comercios, servicios…', onClear, glass, rainbow, suggestions, style }: SearchInputProps) {
+export function SearchInput({ value, defaultValue, onChange, placeholder = 'Buscar comercios, servicios…', onClear, glass, rainbow, suggestions, flowingBorder, style }: SearchInputProps) {
   const [f, setF] = useState(false)
   const [v, setV] = useState(defaultValue ?? '')
   const val = value ?? v
@@ -100,6 +102,11 @@ export function SearchInput({ value, defaultValue, onChange, placeholder = 'Busc
         transition: 'box-shadow var(--dur-base)', ...rainbowStyle, ...style,
       }}
     >
+      {flowingBorder && (
+        <span className="cf-flow-ring cf-ring-mask" aria-hidden="true">
+          <span className="cf-flow-strip" />
+        </span>
+      )}
       <Icon name="search" size={18} color="var(--text-muted)" />
       <input
         value={val}
