@@ -5,7 +5,9 @@
 @import 'tailwindcss/utilities.css' layer(utilities);
 
 /* Fuentes autoalojadas en /public/fonts (precargadas en index.html, sin bloquear el render):
-   Glowtone (display, licencia "personal use": verificar antes de producción) + Manrope variable 400–800 */
+   Glowtone (display, licencia "personal use": verificar antes de producción) + Manrope variable 400–800.
+   Reducidas con fonttools: solo los caracteres del español y signos comunes (Latin-1, “ ” – — … € ™),
+   sin hinting ni variantes tipográficas que el sitio no usa; Manrope limitada a los pesos 400–800. */
 @font-face {
   font-family: 'Glowtone';
   src: url('/fonts/Glowtone-Regular.woff2') format('woff2');
@@ -29,7 +31,7 @@
   font-weight: 400 800;
   font-display: swap;
   src: url('/fonts/Manrope-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2013-2014, U+2018-201A, U+201C-201E, U+2022, U+2026, U+2039-203A, U+20AC, U+2122, U+2191, U+2193, U+2212;
 }
 
 /* ───────── Tokens (mismos nombres que el handoff) ───────── */
@@ -210,12 +212,14 @@
 }
 
 /* ───────── Keyframes ───────── */
+/* Encendido del tubo de neón: solo opacity (lo anima la GPU). El resplandor (text-shadow) se atenúa junto con
+   el texto; animar text-shadow obligaría a redibujar el texto con sus sombras en cada paso. */
 @keyframes cf-neon-on {
-  0% { opacity: 0.15; text-shadow: none; }
+  0% { opacity: 0.15; }
   8% { opacity: 1; }
   10% { opacity: 0.3; }
   14% { opacity: 1; }
-  18% { opacity: 0.5; text-shadow: none; }
+  18% { opacity: 0.5; }
   24%, 100% { opacity: 1; }
 }
 @keyframes cf-drift {
@@ -257,15 +261,19 @@
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.26; }
   50% { transform: translate3d(10vw, -10vh, 0) scale(1.22); opacity: 0.42; }
 }
-/* Borde del buscador: gradiente coral→azul→violeta que fluye hacia la derecha */
-@keyframes cf-border-slide {
-  0% { background-position: 0 0, 0 0; }
-  100% { background-position: 0 0, 200% 0; }
+/* Gradiente coral→azul→violeta que fluye (borde del buscador del hero y borde/halo del modal de ubicación).
+   Antes se animaba background-position, que obliga a repintar en cada cuadro; ahora es una franja con el
+   gradiente repetido que se desplaza con transform (lo hace la GPU). Mismo recorrido: el contenedor mide W,
+   cada ciclo del gradiente 2W (como background-size: 200%) y en 5 s avanza un ciclo completo. */
+.cf-flow-strip {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 400%;
+  background: linear-gradient(90deg, var(--cf-rb-coral), var(--cf-rb-sky), var(--cf-rb-violet), var(--cf-rb-coral)) 0 0 / 50% 100% repeat-x;
+  animation: cf-flow-x 5s linear infinite;
+  will-change: transform;
 }
-/* Halo/glow de una sola capa que fluye en sync con cf-border-slide (mismo color por lado que el borde) */
-@keyframes cf-glow-slide {
-  0% { background-position: 0 0; }
-  100% { background-position: 200% 0; }
+@keyframes cf-flow-x {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 /* Destello especular que barre el buscador cada tanto */
 @keyframes cf-shine {
@@ -578,6 +586,12 @@ a:hover {
 }
 /* ───────── Hero: composición teatral (ciudad panorámica + consola de búsqueda centrada) ───────── */
 .hero-city-wrap { position: relative; order: 4; }
+/* captura estática de la ciudad: encaja igual que la cámara de la escena 3D (centrada, sin recortar) */
+.hero-city-poster {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: contain; object-position: 50% 50%;
+  pointer-events: none; user-select: none;
+}
 .hero-avatars { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 /* el contenido flota por encima de la escena y de la capa de avatares */
 .hero-brand, .hero-explore, .hero-cta, .hero-desc, .hero-search { position: relative; z-index: 2; }
@@ -599,14 +613,21 @@ a:hover {
 .hero-explore { grid-area: explore; display: flex; align-items: center; justify-content: center; gap: clamp(14px, 1.6vw, 22px); align-self: center; }
 .hero-explore-icons { display: flex; align-items: center; gap: clamp(12px, 1.2vw, 16px); }
 /* íconos de tiendas/servicios/emprendimientos/ofertas: tubo de neón que enciende y cada tanto parpadea
-   (duración y delay por ícono, inline, para que no parpadeen todos a la vez) */
+   (duración y delay por ícono, inline, para que no parpadeen todos a la vez).
+   Dos capas anidadas, una animación de opacity en cada una: dos animaciones sobre la misma propiedad de un
+   mismo elemento no se pueden combinar en la GPU. Las opacidades se multiplican, así que se ve igual. */
 .hero-explore-icon {
   display: inline-flex;
+  animation-name: cf-tube-on;
+  animation-timing-function: steps(1, end);
+  animation-fill-mode: both;
+}
+.hero-explore-icon-glow {
+  display: inline-flex;
   filter: drop-shadow(0 0 4px var(--c)) drop-shadow(0 0 12px var(--c));
-  animation-name: cf-tube-on, cf-hero-icon-flicker;
-  animation-timing-function: steps(1, end), linear;
-  animation-iteration-count: 1, infinite;
-  animation-fill-mode: both, none;
+  animation-name: cf-hero-icon-flicker;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }
 /* el resplandor (filter) del ícono es fijo; el parpadeo solo anima opacity */
 @keyframes cf-hero-icon-flicker {
@@ -656,15 +677,17 @@ a:hover {
 .hero-aurora > span:nth-child(2) { --blob: var(--cf-rb-sky); right: -16%; top: 0%; width: 46vmax; height: 46vmax; animation: cf-aurora-b 32s var(--ease-in-out) infinite; }
 .hero-aurora > span:nth-child(3) { --blob: var(--cf-rb-coral); left: 26%; bottom: -26%; width: 48vmax; height: 48vmax; animation: cf-aurora-c 29s var(--ease-in-out) infinite; }
 
-/* Buscador del hero: borde coral→azul→violeta que fluye hacia la derecha + destello periódico */
+/* Buscador del hero: borde coral→azul→violeta que fluye + destello periódico.
+   El borde lo dibuja un anillo de 2.5px (.cf-flow-ring, con la franja .cf-flow-strip adentro); el label no
+   lleva borde propio y suma esos 2.5px al padding (16+2.5 / 6+2.5), así el contenido queda en el mismo lugar. */
 .hero-search label {
   position: relative; overflow: hidden;
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    linear-gradient(90deg, var(--cf-rb-coral), var(--cf-rb-sky), var(--cf-rb-violet), var(--cf-rb-coral)) border-box !important;
-  background-size: auto, 200% 100% !important;
-  border-width: 2.5px !important;
-  animation: cf-border-slide 5s linear infinite;
+  background: var(--surface) !important;
+  border: 0 !important;
+  padding: 0 8.5px 0 18.5px !important;
+}
+.cf-flow-ring {
+  position: absolute; inset: 0; padding: 2.5px; border-radius: inherit; overflow: hidden; pointer-events: none;
 }
 .hero-search label::after {
   content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3;
@@ -731,7 +754,7 @@ a:hover {
 /* Respeto a reduced-motion: congela aurora, borde del buscador, destello, pulso del neón y onda del basket */
 @media (prefers-reduced-motion: reduce) {
   .hero-aurora > span { animation: none !important; opacity: 0.26; }
-  .hero-search label { animation: none !important; }
+  .cf-flow-strip { animation: none !important; }
   .hero-search label::after { display: none; }
   .hero-neon-flash, .hero-basket-glow { animation: none !important; display: none; }
   .hero-basket-wave { animation: none !important; display: none; }
@@ -920,5 +943,5 @@ a:hover {
   :root { --dur-drift: 0s; --stagger: 0ms; }
   .cf-neon-on { animation: none; }
   * { scroll-behavior: auto !important; }
-  .requested-art, .catalog-art, .offers-art, .hero-basket, .hero-basket-glow, .hero-letter, .hero-explore-icon, .nav-tube-on, .nav-idle, .shop-fab { animation: none !important; }
+  .requested-art, .catalog-art, .offers-art, .hero-basket, .hero-basket-glow, .hero-letter, .hero-explore-icon, .hero-explore-icon-glow, .nav-tube-on, .nav-idle, .shop-fab { animation: none !important; }
 }

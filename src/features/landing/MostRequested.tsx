@@ -2,6 +2,7 @@ import { GlowBackdrop } from '../../components/brand/GlowBackdrop'
 import { TypeAvatar } from '../../components/business/TypeAvatar'
 import { Button } from '../../components/ui/Button'
 import { ImageSlot } from '../../components/ui/ImageSlot'
+import { srcSet } from '../../components/ui/srcSet'
 import { useHover } from '../../components/ui/useHover'
 import { REQUESTED } from '../../data/offers'
 import type { Requested } from '../../data/types'
@@ -41,7 +42,7 @@ export function LandingMostRequested({ geo }: { onOpenMap: OpenMap; geo: Geo }) 
     <section id="mas-solicitados" className="lp-sec" style={{ position: 'relative', overflow: 'hidden', padding: '56px 0' }}>
       <GlowBackdrop palette="servicio" intensity={0.3} />
       <div className="requested-art" aria-hidden="true" style={{ position: 'absolute', zIndex: 0, top: 4, left: 'calc(-1 * clamp(64px,6vw,120px))', width: 'clamp(150px,15vw,260px)', pointerEvents: 'none' }}>
-        <img src="/assets/illustrations/plus-requested-3d.webp" alt="" width={520} height={520} loading="lazy" decoding="async" style={{ display: 'block', width: '100%', height: 'auto', opacity: 0.85, transform: 'perspective(900px) rotateY(18deg) rotate(-8deg)', filter: 'drop-shadow(0 20px 24px rgba(0,0,0,.55)) drop-shadow(0 0 34px rgba(164,116,245,.4)) drop-shadow(0 0 60px rgba(79,169,238,.25))' }} />
+        <img src="/assets/illustrations/plus-requested-3d.webp" srcSet={srcSet('/assets/illustrations/plus-requested-3d', [260, 390], 520)} sizes="clamp(150px, 15vw, 260px)" alt="" width={520} height={520} loading="lazy" decoding="async" style={{ display: 'block', width: '100%', height: 'auto', opacity: 0.85, transform: 'perspective(900px) rotateY(18deg) rotate(-8deg)', filter: 'drop-shadow(0 20px 24px rgba(0,0,0,.55)) drop-shadow(0 0 34px rgba(164,116,245,.4)) drop-shadow(0 0 60px rgba(79,169,238,.25))' }} />
       </div>
       <div className="requested-body" style={{ position: 'relative', zIndex: 1 }}>
         <div style={{ position: 'relative', maxWidth: 'var(--container)', margin: '0 auto' }}>

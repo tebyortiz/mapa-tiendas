@@ -2,6 +2,7 @@ import { GlowBackdrop } from '../../components/brand/GlowBackdrop'
 import { TypeAvatar } from '../../components/business/TypeAvatar'
 import { Button } from '../../components/ui/Button'
 import { ImageSlot } from '../../components/ui/ImageSlot'
+import { srcSet } from '../../components/ui/srcSet'
 import { useHover } from '../../components/ui/useHover'
 import type { Business, Offer } from '../../data/types'
 import { offersOf } from '../../lib/nearbyStore'
@@ -63,7 +64,7 @@ export function LandingOffers({ onOpenMap, geo }: { onOpenMap: OpenMap; geo: Geo
         <div style={{ position: 'relative', maxWidth: 'var(--container)', margin: '0 auto' }}>
           <SectionHead className="offers-head" title={<>OFERTAS DESTACADAS<br />DE TU ZONA</>} subtitle={nearby ? 'Te presentamos las ofertas vigentes en: ' : 'Ofertas vigentes de los comercios cercanos a tu ubicación.'} city={nearby?.city} />
           <div className="offers-art" aria-hidden="true" style={{ position: 'absolute', top: '50%', right: 'var(--gutter)', width: 'clamp(150px,13vw,220px)', pointerEvents: 'none' }}>
-            <img src="/assets/illustrations/cart-offers-3d.webp" alt="" width={840} height={720} loading="lazy" decoding="async" style={{ display: 'block', width: '100%', height: 'auto', transform: 'perspective(900px) rotateY(-14deg) rotateX(4deg)', filter: 'drop-shadow(0 20px 22px rgba(0,0,0,.55)) drop-shadow(0 0 30px rgba(164,116,245,.35)) drop-shadow(0 0 50px rgba(79,169,238,.2))' }} />
+            <img src="/assets/illustrations/cart-offers-3d.webp" srcSet={srcSet('/assets/illustrations/cart-offers-3d', [300, 450, 600], 840)} sizes="(max-width: 899px) min(50vw, 300px), clamp(240px, 22vw, 420px)" alt="" width={840} height={720} loading="lazy" decoding="async" style={{ display: 'block', width: '100%', height: 'auto', transform: 'perspective(900px) rotateY(-14deg) rotateX(4deg)', filter: 'drop-shadow(0 20px 22px rgba(0,0,0,.55)) drop-shadow(0 0 30px rgba(164,116,245,.35)) drop-shadow(0 0 50px rgba(79,169,238,.2))' }} />
           </div>
         </div>
         {!nearby ? (

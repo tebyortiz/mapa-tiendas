@@ -8,6 +8,20 @@
          texto del hero aparezca ya con su tipografía y sin bloquear el primer pintado -->
     <link rel="preload" href="/fonts/Manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/Glowtone-Regular.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- Solo en la landing: la captura de la ciudad del hero (elemento LCP) se pide ya desde el HTML, en paralelo
+         con el JS, en vez de esperar a que React la renderice. srcset/sizes deben coincidir con CITY_POSTER
+         (src/features/landing/Hero.tsx) o el navegador la bajaría dos veces. -->
+    <script>
+      if (location.pathname === '/') {
+        var l = document.createElement('link')
+        l.rel = 'preload'
+        l.as = 'image'
+        l.fetchPriority = 'high'
+        l.setAttribute('imagesrcset', [960, 1280, 1600, 2160].map(function (w) { return '/assets/scenes/city-' + w + '.webp ' + w + 'w' }).join(', '))
+        l.setAttribute('imagesizes', '(max-width: 759px) 162vw, (max-width: 959px) 116vw, min(150vw, 1391px, calc((100vh - 160px) * 1.484))')
+        document.head.appendChild(l)
+      }
+    </script>
     <title>Comprá Fácil — El mapa de tu ciudad</title>
     <meta
       name="description"

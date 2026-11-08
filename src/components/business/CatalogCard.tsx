@@ -32,6 +32,26 @@ export function CatalogCard({ type = 'tienda', title, description, image, onClic
   const slides = Array.isArray(image) ? image : [image]
   const [idx, setIdx] = useState(0)
 
+  // Las fotos (fondos CSS) se piden recién cuando la card está por entrar en pantalla: así no compiten por la
+  // red con lo primero que se ve (hero) al cargar la página. El margen amplio hace que ya estén al llegar.
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [near, setNear] = useState(false)
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el || !window.IntersectionObserver) {
+      setNear(true)
+      return
+    }
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        setNear(true)
+        io.disconnect()
+      }
+    }, { rootMargin: '800px 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+
   // Rotación automática del carrusel. El startDelay escalona el inicio de cada
   // card para que no cambien todas a la vez (primero tiendas, última emprendimientos).
   useEffect(() => {
@@ -65,12 +85,12 @@ export function CatalogCard({ type = 'tienda', title, description, image, onClic
 
   return (
     <div {...bind} style={{ display: 'flex', flexDirection: 'column', gap: 16, ...style }}>
-      <div onClick={onClick} style={{ position: 'relative', height: `var(--catalog-card-h, ${height}px)`, borderRadius: 'var(--radius-sheet)', overflow: 'hidden', cursor: 'pointer', background: 'var(--surface)', boxShadow: h ? t.glow : 'inset 0 0 0 1px var(--border)', transition: 'box-shadow var(--dur-slow) var(--ease-out)' }}>
+      <div ref={cardRef} onClick={onClick} style={{ position: 'relative', height: `var(--catalog-card-h, ${height}px)`, borderRadius: 'var(--radius-sheet)', overflow: 'hidden', cursor: 'pointer', background: 'var(--surface)', boxShadow: h ? t.glow : 'inset 0 0 0 1px var(--border)', transition: 'box-shadow var(--dur-slow) var(--ease-out)' }}>
         {slides.map((src, i) => (
           <div
             key={src + i}
             className={`catalog-slide${i === idx ? ' is-active' : ''}`}
-            style={{ position: 'absolute', inset: 0, background: `url(${src}) center/cover`, transform: h ? 'scale(1.04)' : 'scale(1)', transition: 'opacity var(--dur-enter) var(--ease-in-out), transform var(--dur-enter) var(--ease-out)' }}
+            style={{ position: 'absolute', inset: 0, background: near ? `url(${src}) center/cover` : undefined, transform: h ? 'scale(1.04)' : 'scale(1)', transition: 'opacity var(--dur-enter) var(--ease-in-out), transform var(--dur-enter) var(--ease-out)' }}
           />
         ))}
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg,rgba(7,7,13,0) 50%,rgba(7,7,13,.6) 100%)' }} />

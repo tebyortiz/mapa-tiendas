@@ -182,10 +182,17 @@ export const FEATURED: Record<string, BusinessType> = (() => {
   return out
 })()
 
-const pack = (tipo: string) =>
+/** Kit de Kenney del que sale cada pieza (los originales viven en assets-src/kenney/, fuera del sitio publicado) */
+export const piecePack = (tipo: string) =>
   tipo.startsWith('road-') || tipo.startsWith('light-') ? 'roads' : tipo.startsWith('building-type-') || tipo.startsWith('tree-') || tipo === 'planter' ? 'suburban' : 'commercial'
 
-export const pieceUrl = (tipo: string) => encodeURI(`/models/kenney-city-${pack(tipo)}/GLB format/${tipo}.glb`)
+/** Capas de la ciudad, en el orden en que se montan. Cada una es un único .glb generado por
+ *  scripts/build-city-models.mjs (una pieza = un nodo con el nombre del tipo). */
+export const CITY_LAYERS = ['roads', 'nature', 'buildings'] as const
+export type CityLayer = (typeof CITY_LAYERS)[number]
+export const pieceLayer = (tipo: string): CityLayer =>
+  tipo.startsWith('road-') || tipo.startsWith('light-') ? 'roads' : tipo.startsWith('tree-') ? 'nature' : 'buildings'
+export const layerUrl = (layer: CityLayer) => `/models/city/${layer}.glb`
 
 export function cellPosition(fila: number, columna: number): [number, number, number] {
   return [(columna - (COLS - 1) / 2) * CELL, 0, (fila - (ROWS - 1) / 2) * CELL]
