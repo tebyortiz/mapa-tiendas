@@ -114,18 +114,33 @@ const FALLBACK_PHOTO = '/assets/photos/carr-tienda01.webp'
 
 const normalize = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 
-/** profile.chainType llega en inglés (ttv y gesto); se acepta también en español. */
+/**
+ * profile.chainType llega en inglés (ttv y gesto); se acepta también en español. Los valores de ttv
+ * salen del panel (editar-tienda → chainTypeOptions). El orden importa: gana la primera que coincide.
+ */
 const CHAIN_TYPES: [RegExp, CategoryKey][] = [
   [/supermarket|supermercado/, 'supermercado'],
   [/minimarket|minimercado/, 'minimarket'],
   [/restaurant/, 'restaurant'],
   [/hardware|ferreteria/, 'ferreteria'],
-  [/cloth|apparel|fashion|ropa/, 'ropa'],
+  [/cloth|apparel|fashion|ropa|indumentaria/, 'ropa'],
+  [/footwear|shoe|calzado/, 'calzados'],
   [/electronic|electronica/, 'electronica'],
+  [/book|libreria/, 'libreria'],
+  [/paint|pintureria/, 'pintureria'],
+  [/sport|deporte/, 'deportes'],
+  [/construction|corralon/, 'corralon'],
+  [/bazaa?r/, 'bazar'],
+  [/healthfood|dietetica/, 'dietetica'],
   [/pharmacy|farmacia/, 'farmacia'],
   [/automotive|automotriz|auto/, 'automotriz'],
+  [/toy|jugueteria/, 'jugueteria'],
+  [/party|cotillon/, 'cotillon'],
+  [/souvenir|regaleria/, 'regaleria'],
   [/pet|mascota/, 'mascotas'],
-  [/home|furniture|hogar|mueble/, 'hogar'],
+  // "home" es Hogar y Muebles; "furniture" es Mueblería (rubros distintos en ttv)
+  [/home|hogar/, 'hogar'],
+  [/furniture|mueble/, 'muebleria'],
   [/entertainment|entretenimiento/, 'entretenimiento'],
   [/grocery|despensa/, 'despensa'],
   [/kiosk|kiosco/, 'kiosco'],

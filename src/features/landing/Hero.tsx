@@ -30,12 +30,73 @@ function FlickerWord({ text, seed }: { text: string; seed: number }) {
   )
 }
 
+/** Línea ondulada (una "S" acostada) de la bandera, a la altura y. */
+const flagWave = (y: number) => `M4 ${y} C18 ${y - 10} 31 ${y - 10} 45 ${y} S72 ${y + 10} 86 ${y}`
+
+/**
+ * Bandera argentina en tubos de neón junto a "FÁCIL": celeste arriba y abajo; en el medio, dos tramos blancos
+ * con el sol amarillo entre ellos. `flash`: solo el resplandor, más grande, para la capa del destello periódico
+ * (.hero-neon-flash), que se superpone exactamente encima.
+ */
+function ArgFlag({ flash }: { flash?: boolean }) {
+  const glow = flash ? 'hero-flag-flash' : 'hero-flag-glow'
+  return (
+    <svg className="hero-flag" viewBox="0 0 90 56" aria-hidden="true" focusable="false">
+      <defs>
+        {flash ? (
+          // resplandor masivo: dos difuminados, sin el trazo nítido (ese ya lo dibuja la bandera de abajo)
+          <filter id={glow} x="-80%" y="-150%" width="260%" height="400%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="near" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="10" result="far" />
+            <feMerge>
+              <feMergeNode in="far" />
+              <feMergeNode in="far" />
+              <feMergeNode in="near" />
+              <feMergeNode in="near" />
+            </feMerge>
+          </filter>
+        ) : (
+          <>
+            {/* resplandor de los tubos: cada trazo se difumina con su propio color y se dibuja encima nítido */}
+            <filter id={glow} x="-30%" y="-60%" width="160%" height="220%">
+              <feGaussianBlur stdDeviation="2.4" result="b" />
+              <feMerge>
+                <feMergeNode in="b" />
+                <feMergeNode in="b" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+            {/* el sol brilla más fuerte que los tubos */}
+            <filter id="hero-flag-sun" x="-150%" y="-150%" width="400%" height="400%">
+              <feGaussianBlur stdDeviation="2.8" result="b" />
+              <feMerge>
+                <feMergeNode in="b" />
+                <feMergeNode in="b" />
+                <feMergeNode in="b" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </>
+        )}
+      </defs>
+      <g filter={`url(#${glow})`} fill="none" strokeWidth="4.2" strokeLinecap="round">
+        <path d={flagWave(10)} stroke="#9cc6ec" />
+        {/* línea del medio: pathLength 100 → tramo de 34, hueco de 32 centrado en el sol, tramo de 34 */}
+        <path d={flagWave(28)} stroke="#fff" pathLength={100} strokeDasharray="34 32 34" />
+        <path d={flagWave(46)} stroke="#9cc6ec" />
+        {flash && <circle cx="45" cy="28" r="4.8" fill="#ffd23f" />}
+      </g>
+      {!flash && <circle cx="45" cy="28" r="4.8" fill="#ffe066" filter="url(#hero-flag-sun)" />}
+    </svg>
+  )
+}
+
 // Íconos junto a "EXPLORÁ TU CIUDAD" (mismos que el navbar): [ícono, color, rótulo, duración y delay del parpadeo]
 const EXPLORE_ICONS: [string, string, string, number, number][] = [
+  ['badge-percent', '#fff', 'Ofertas', 8.2, 2.3],
   ['shopping-bag', 'var(--tienda)', 'Tiendas', 7.5, 1.6],
   ['wrench', 'var(--servicio)', 'Servicios', 9, 3.1],
   ['sparkles', 'var(--emprendimiento)', 'Emprendimientos', 6.5, 4.4],
-  ['badge-percent', '#fff', 'Ofertas', 8.2, 2.3],
 ]
 
 const HeroCity3D = lazy(() => import('./city/HeroCity3D'))
@@ -241,15 +302,19 @@ export function LandingHero({ onOpenMap, onSearch }: { onOpenMap: () => void; on
               <img src="/assets/logo/basket-mark.webp" srcSet={BASKET_SRCSET} sizes={HERO_BASKET_SIZES} alt="" aria-hidden="true" width={450} height={400} className="hero-basket-glow" />
               <img src="/assets/logo/basket-mark.webp" srcSet={BASKET_SRCSET} sizes={HERO_BASKET_SIZES} alt="" width={450} height={400} fetchPriority="high" className="hero-basket-img" style={{ display: 'block', height: 'clamp(110px,16vw,200px)', width: 'auto' }} />
             </div>
-            <h1 className="cf-neon cf-neon-on hero-neon" aria-label="Comprá Fácil" style={{ margin: 0, fontSize: 'clamp(44px,6vw,86px)', lineHeight: 0.95, whiteSpace: 'nowrap' }}>
+            <h1 className="cf-neon cf-neon-on hero-neon" aria-label="Comprá Fácil" style={{ margin: 0, fontSize: 'clamp(44px,6vw,86px)', lineHeight: 0.95, whiteSpace: 'nowrap', textAlign: 'left' }}>
               <FlickerWord text="COMPRÁ" seed={0} />
               <br />
               <FlickerWord text="FÁCIL" seed={6} />
-              {/* destello blanco del neón: capa superpuesta con el resplandor fijo que se enciende con opacity */}
+              {/* Bandera argentina en neón a la derecha de "FÁCIL". Va dentro del h1: enciende junto con el cartel. */}
+              <ArgFlag />
+              {/* destello blanco del neón: capa superpuesta con el resplandor fijo que se enciende con opacity.
+                  Lleva también la bandera (solo su resplandor), en el mismo lugar, para que destelle junto al cartel. */}
               <span className="hero-neon-flash" aria-hidden="true">
                 COMPRÁ
                 <br />
                 FÁCIL
+                <ArgFlag flash />
               </span>
             </h1>
             <div className="hero-explore">
@@ -269,6 +334,10 @@ export function LandingHero({ onOpenMap, onSearch }: { onOpenMap: () => void; on
         </div>
 
         <HeroCity />
+
+        {/* Franja negra difuminada en el borde inferior del hero: delante de la ciudad y detrás del buscador
+            y la descripción (el indicador de ubicación es fixed y queda siempre encima) */}
+        <div className="hero-fade" aria-hidden="true" />
 
         {/* Consola: buscador arriba (protagonista sobre el mapa) y descripción debajo */}
         <div className="hero-cta">

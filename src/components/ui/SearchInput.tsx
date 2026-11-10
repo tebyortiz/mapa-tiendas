@@ -103,9 +103,13 @@ export function SearchInput({ value, defaultValue, onChange, placeholder = 'Busc
       }}
     >
       {flowingBorder && (
-        <span className="cf-flow-ring cf-ring-mask" aria-hidden="true">
-          <span className="cf-flow-strip" />
-        </span>
+        <>
+          {/* Fondo oscuro interior: arranca debajo del anillo, así no queda negro por fuera del borde */}
+          <span className="cf-flow-fill" aria-hidden="true" />
+          <span className="cf-flow-ring cf-ring-mask" aria-hidden="true">
+            <span className="cf-flow-strip" />
+          </span>
+        </>
       )}
       <Icon name="search" size={18} color="var(--text-muted)" />
       <input
