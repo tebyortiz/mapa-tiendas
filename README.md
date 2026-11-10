@@ -68,7 +68,7 @@ flowchart TD
     GPS[navigator.geolocation] --> LAF
     subgraph nearbyStore[lib/nearbyStore.ts]
         LAF[locateAndFetch] --> STORE[(Store de ubicación<br/>nearby · loading · error · modalOpen)]
-        STORE <--> SS1[(sessionStorage<br/>nearby-v7 · vence a los 30 min)]
+        STORE <--> SS1[(sessionStorage<br/>nearby-v8 · vence a los 30 min)]
     end
     LAF -->|POST /api/geo/nearby| API[Backend geo<br/>ttv + gesto]
     LAF -->|reverse geocoding| MB[Mapbox]
@@ -93,7 +93,7 @@ Todo arranca en [src/lib/nearbyStore.ts](src/lib/nearbyStore.ts), que es la úni
 
 1. `locateAndFetch()` pide la posición al navegador y, en paralelo, llama a `fetchNearby` (backend) y a `reverseGeocode` (Mapbox).
 2. Cada `ApiResult` se convierte en un `Business` con `toBusiness` (ver [Normalización](#normalización-apiresult--business)).
-3. El resultado `{ pos, businesses, city, at }` se guarda en el store global y en `sessionStorage` (`nearby-v7`), así la landing y el mapa lo comparten y sobrevive a una recarga.
+3. El resultado `{ pos, businesses, city, at }` se guarda en el store global y en `sessionStorage` (`nearby-v8`), así la landing y el mapa lo comparten y sobrevive a una recarga.
 
 La ubicación guardada **vence a los 30 minutos** (`CACHE_TTL`). En mobile las pestañas quedan abiertas durante días y iOS no permite revalidar en silencio, así que una ubicación vieja se descarta y se vuelve a pedir en lugar de mostrar una zona donde el usuario ya no está. La búsqueda de productos guardada usa la misma vigencia.
 

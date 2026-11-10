@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git:*)",
+      "PowerShell(git:*)",
+      "Edit(docs/decisiones/**)",
+      "Write(docs/decisiones/**)"
+    ]
+  }
+}

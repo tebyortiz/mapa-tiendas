@@ -12,12 +12,12 @@ interface LocationStickyBarProps {
 /**
  * Indicador de ubicación persistente, compartido por la landing y el mapa.
  * - Con ubicación (desktop y mobile): círculo flotante (mismo estilo que el launcher del asistente). Al
- *   tocarlo crece hacia la izquierda y muestra: marcador + ("Estás en", solo desktop) + nombre de la ciudad
- *   + botón actualizar + botón cerrar. En el mapa va entre el zoom (+, −) y el botón "Mi ubicación".
+ *   tocarlo crece hacia la izquierda y muestra: marcador + nombre de la ciudad + botón "Cambiar" + botón
+ *   cerrar. En el mapa va entre el zoom (+, −) y el botón "Mi ubicación".
  * - Sin ubicación, desktop: pill punteada ámbar con aviso + botón "Detectar".
  * - Sin ubicación, mobile: círculo "incompleto" (aro punteado ámbar + pulso + aviso) que abre el modal.
  *
- * "Actualizar" / "Detectar" reabren el modal para recalcular lat/lng/radio: la
+ * "Cambiar" / "Detectar" reabren el modal para recalcular lat/lng/radio: la
  * ubicación queda persistida, así que si el usuario se movió puede actualizarla desde acá.
  */
 export function LocationStickyBar({ variant = 'landing' }: LocationStickyBarProps) {
@@ -44,14 +44,8 @@ export function LocationStickyBar({ variant = 'landing' }: LocationStickyBarProp
 
   // Nombre de la ciudad detectada: texto solo (sin chip), que se recorta con "…" si es muy largo.
   const cityName = (
-    <span style={{ minWidth: 0, font: '800 14px/1.2 var(--font-body)', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+    <span style={{ minWidth: 0, font: '800 13px/1.2 var(--font-body)', color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
       {city}
-    </span>
-  )
-
-  const estasEn = (
-    <span style={{ font: '600 12px/1 var(--font-body)', letterSpacing: '.06em', textTransform: 'uppercase', color: '#fff', whiteSpace: 'nowrap' }}>
-      Estás en
     </span>
   )
 
@@ -136,27 +130,27 @@ export function LocationStickyBar({ variant = 'landing' }: LocationStickyBarProp
         <div
           className="loc-mob-pill"
           data-open={open ? 'true' : 'false'}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: open ? 10 : 0, padding: open ? '7px 7px 7px 16px' : 0, margin: open ? '-8px -8px -8px 0' : 0, borderRadius: 'var(--radius-pill, 999px)', backdropFilter: open ? 'blur(16px)' : 'none', WebkitBackdropFilter: open ? 'blur(16px)' : 'none', background: open ? 'var(--surface-glass-dark)' : 'transparent', border: open ? '1px solid rgba(255,255,255,.18)' : 'none', boxShadow: open ? 'var(--glow-rainbow), 0 10px 30px rgba(0,0,0,.45)' : 'none', transition: 'gap .3s var(--ease-out), padding .3s var(--ease-out), margin .3s var(--ease-out)' }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: open ? 10 : 0, padding: open ? '7px 7px 7px 16px' : 0, margin: open ? '-8px -8px -8px 0' : 0, borderRadius: 'var(--radius-pill, 999px)', backdropFilter: open ? 'blur(16px)' : 'none', WebkitBackdropFilter: open ? 'blur(16px)' : 'none', background: open ? 'var(--surface-glass-dark)' : 'transparent', border: open ? '1px solid rgba(255,255,255,.18)' : 'none', boxShadow: open ? '0 0 12px rgba(164,116,245,.12), 0 10px 30px rgba(0,0,0,.45)' : 'none', transition: 'gap .3s var(--ease-out), padding .3s var(--ease-out), margin .3s var(--ease-out)' }}
         >
           {/* El margen negativo (= padding + borde) hace que la pill crezca hacia afuera: el círculo no se mueve al abrir. */}
-          {/* Cuerpo que crece hacia la izquierda: marcador + ("Estás en") + nombre de la ciudad + botón actualizar */}
+          {/* Cuerpo que crece hacia la izquierda: marcador + nombre de la ciudad + botón "Cambiar" */}
           <div className="loc-body">
-            <Icon name="map-pin" size={24} color="#fff" style={{ flex: 'none', filter: 'drop-shadow(0 0 3px rgba(255,255,255,.9)) drop-shadow(0 0 9px rgba(255,255,255,.55))' }} />
-            {desk && estasEn}
+            <Icon name="map-pin" size={18} color="#fff" style={{ flex: 'none', filter: 'drop-shadow(0 0 3px rgba(255,255,255,.6))' }} />
             {cityName}
             <button
               type="button"
               onClick={() => openLocationModal()}
               disabled={loading}
-              aria-label="Actualizar mi ubicación"
-              style={{ flex: 'none', gap: 7, width: desk ? undefined : 40, height: desk ? 44 : 40, padding: desk ? '0 16px' : 0, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)', font: '800 13px var(--font-body)', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 999, cursor: loading ? 'default' : 'pointer', background: 'var(--rainbow-grad)', opacity: loading ? 0.85 : 1, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.28)' }}
+              aria-label="Actualizar o cambiar mi ubicación"
+              title="Actualizar o cambiar mi ubicación"
+              style={{ flex: 'none', gap: 6, width: desk ? undefined : 34, height: 34, padding: desk ? '0 13px' : 0, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,.35)', font: '800 12.5px var(--font-body)', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderRadius: 999, cursor: loading ? 'default' : 'pointer', background: 'var(--rainbow-grad)', opacity: loading ? 0.85 : 1, boxShadow: 'inset 0 0 0 1px rgba(255,255,255,.28)' }}
             >
               {loading ? (
-                <span aria-hidden="true" style={{ width: 16, height: 16, borderRadius: 999, border: '2px solid rgba(255,255,255,.4)', borderTopColor: '#fff', display: 'inline-block', animation: 'cf-spin .7s linear infinite' }} />
+                <span aria-hidden="true" style={{ width: 14, height: 14, borderRadius: 999, border: '2px solid rgba(255,255,255,.4)', borderTopColor: '#fff', display: 'inline-block', animation: 'cf-spin .7s linear infinite' }} />
               ) : (
-                <Icon name="refresh-cw" size={18} color="#fff" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.35))' }} />
+                <Icon name="refresh-cw" size={15} color="#fff" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,.35))' }} />
               )}
-              {desk && 'Actualizar'}
+              {desk && 'Cambiar'}
             </button>
           </div>
 
@@ -167,7 +161,7 @@ export function LocationStickyBar({ variant = 'landing' }: LocationStickyBarProp
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? 'Cerrar ubicación' : 'Ver mi ubicación'}
             aria-expanded={open}
-            style={{ position: 'relative', flex: 'none', width: circle, height: circle, padding: 3, border: 'none', borderRadius: 999, cursor: 'pointer', background: 'transparent', boxShadow: 'var(--glow-rainbow), 0 10px 26px rgba(0,0,0,.45)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ position: 'relative', flex: 'none', width: circle, height: circle, padding: 3, border: 'none', borderRadius: 999, cursor: 'pointer', background: 'transparent', boxShadow: open ? '0 4px 12px rgba(0,0,0,.35)' : 'var(--glow-rainbow), 0 10px 26px rgba(0,0,0,.45)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
           >
             {/* Aro arcoíris enmascarado: así el núcleo puede ser vidrio translúcido sin teñirse */}
             <span aria-hidden="true" className="cf-ring-mask" style={{ position: 'absolute', inset: 0, padding: 3, borderRadius: 999, background: 'var(--rainbow-grad)' }} />
